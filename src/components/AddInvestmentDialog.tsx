@@ -1,6 +1,5 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
-import { TextInput, NumberInput, Button } from "@tremor/react";
 import { TrashIcon, PlusIcon } from "@heroicons/react/24/solid";
 
 interface AddInvestmentDialogProps {

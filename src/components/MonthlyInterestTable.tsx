@@ -1,6 +1,8 @@
-import { Card, Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell, Badge } from "@tremor/react";
+import { format } from "date-fns";
+import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@tremor/react";
+import { Card, Badge } from "@tremor/react";
 import { Investment } from "@/lib/utils";
-import { format, addMonths, isBefore, startOfMonth, isAfter } from "date-fns";
+import { addMonths, isBefore, startOfMonth, isAfter } from "date-fns";
 import { useState } from "react";
 import { calculateMonthlyInterest } from "@/lib/utils";
 import { TrashIcon } from "@heroicons/react/24/outline";

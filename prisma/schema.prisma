@@ -9,34 +9,34 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Investment {
-  id                String              @id @default(cuid())
-  name              String
-  initialCapital    Float
-  currentCapital    Float
-  interestRate      Float
-  startDate         DateTime
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  type              String              @default("standard")
-  monthlyInterests  MonthlyInterest[]
-  reinvestmentType  ReinvestmentType    @default(COMPOUND)
-  rateType          RateType            @default(ANNUAL)
+  id              Int               @id @default(autoincrement())
+  name            String
+  initialCapital  Float
+  currentCapital  Float
+  interestRate    Float
+  startDate       DateTime
+  type            String            @default("standard")
+  rateType        RateType          @default(ANNUAL)
+  reinvestmentType ReinvestmentType @default(COMPOUND)
+  monthlyInterests MonthlyInterest[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model MonthlyInterest {
-  id            String      @id
+  id            Int         @id @default(autoincrement())
   amount        Float
   month         DateTime
   confirmed     Boolean     @default(false)
   confirmedAt   DateTime?
   reinvested    Boolean     @default(false)
   investment    Investment  @relation(fields: [investmentId], references: [id], onDelete: Cascade)
-  investmentId  String
+  investmentId  Int
   createdAt     DateTime    @default(now())
 
   @@unique([investmentId, month])

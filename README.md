@@ -1,85 +1,47 @@
-# Investment Tracking Application
+# Investment Tracking App
 
-A modern web application for tracking your investments and their returns over time. Built with Next.js, TypeScript, and Tailwind CSS.
+A Next.js application for tracking investments and calculating returns.
 
 ## Features
 
-- **Portfolio Overview Dashboard**
-  - Total capital invested
-  - Total earnings
-  - Average return rate
-  - Visual growth charts
-
-- **Investment Management**
-  - Add and track multiple investments
-  - Monitor individual investment performance
-  - Track monthly interest earnings
-  - Support for different investment types and risk levels
-
-- **Performance Tracking**
-  - Monthly interest calculations
-  - Compound interest tracking
-  - Visual performance charts
-  - Historical data visualization
+- Track multiple investments
+- Calculate monthly and annual interest rates
+- View investment history
+- Modern UI with Tailwind CSS
+- Real-time updates
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15.3
 - TypeScript
 - Tailwind CSS
-- Tremor (UI components and charts)
-- SQLite (via Prisma)
-- date-fns (date manipulation)
+- Prisma (SQLite)
+- Tremor UI Components
+- Heroicons
 
 ## Getting Started
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd investment-tracking
-```
-
+1. Clone the repository
 2. Install dependencies:
-```bash
-yarn install
-```
-
+   ```bash
+   yarn install
+   ```
 3. Set up the database:
-```bash
-# Create a .env file with the following content:
-DATABASE_URL="file:./dev.db"
+   ```bash
+   npx prisma migrate dev
+   ```
+4. Start the development server:
+   ```bash
+   yarn dev
+   ```
 
-# Push the database schema
-npx prisma db push
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
 ```
-
-4. Run the development server:
-```bash
-yarn dev
-```
-
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-## Project Structure
-
-```
-src/
-├── app/                 # Next.js app directory
-│   ├── page.tsx        # Dashboard page
-│   └── investments/    # Investments management
-├── components/         # React components
-├── lib/               # Utility functions
-└── prisma/            # Database schema and migrations
+DATABASE_URL="file:./prisma/dev.db"
 ```
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Feel free to submit issues and enhancement requests.

@@ -7,13 +7,12 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './node_modules/@tremor/**/*.{js,ts,jsx,tsx}',
   ],
+  darkMode: 'media',
   theme: {
-    transparent: 'transparent',
-    current: 'currentColor',
     extend: {
       colors: {
-        background: 'rgb(var(--background-rgb))',
-        foreground: 'rgb(var(--foreground-rgb))',
+        transparent: 'transparent',
+        current: 'currentColor',
         tremor: {
           brand: {
             faint: '#eff6ff',
@@ -47,10 +46,8 @@ const config: Config = {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
     require('@tremor/react/plugin'),
   ],
-  darkMode: 'class',
 }
 
 export default config 

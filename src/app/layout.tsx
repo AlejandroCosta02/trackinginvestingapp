@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full bg-[#0a0a0a]">
-      <body className={`${inter.className} min-h-full`}>
+    <html lang="en" className="h-full dark">
+      <body className={`${inter.className} min-h-full bg-tremor-background-emphasis`}>
         <InvestmentProvider>
           <div className="min-h-screen flex flex-col">
             <Navigation />

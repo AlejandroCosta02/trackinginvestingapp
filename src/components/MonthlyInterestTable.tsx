@@ -5,7 +5,6 @@ import { Investment } from "@/lib/utils";
 import { addMonths, startOfMonth, isAfter } from "date-fns";
 import { useState } from "react";
 import { calculateMonthlyInterest } from "@/lib/utils";
-import { TrashIcon } from "@heroicons/react/24/outline";
 
 interface MonthlyInterestTableProps {
   investment: Investment;

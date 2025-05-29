@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/prisma";
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const id = context.params.id;
+    const id = parseInt(params.id);
     
     if (!id) {
       return NextResponse.json(
@@ -16,7 +16,7 @@ export async function DELETE(
     }
 
     // Check if investment exists
-    const investment = await prisma.investment.findUnique({
+    const investment = await db.investment.findUnique({
       where: { id }
     });
 
@@ -28,7 +28,7 @@ export async function DELETE(
     }
 
     // Delete the investment (this will also delete related monthly interests due to CASCADE)
-    await prisma.investment.delete({
+    await db.investment.delete({
       where: { id }
     });
 

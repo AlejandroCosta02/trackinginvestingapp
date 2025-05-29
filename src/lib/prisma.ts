@@ -8,21 +8,29 @@ const prismaClientSingleton = () => {
     errorFormat: 'pretty',
     datasources: {
       db: {
-        url: process.env.NODE_ENV === 'production'
-          ? process.env.DATABASE_URL
-          : process.env.DIRECT_URL
+        url: process.env.DATABASE_URL
       }
     }
   }).$extends({
     query: {
       $allOperations({ query, args }) {
-        return query(args).catch((error) => {
-          console.error('Database operation failed:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            args
+        const startTime = Date.now()
+        return query(args)
+          .then((result) => {
+            const duration = Date.now() - startTime
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`Query took ${duration}ms`)
+            }
+            return result
           })
-          throw error
-        })
+          .catch((error) => {
+            console.error('Database operation failed:', {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              args,
+              duration: Date.now() - startTime
+            })
+            throw error
+          })
       }
     }
   })
@@ -97,7 +105,7 @@ db.$use(async (params, next) => {
   }
 })
 
-// Graceful shutdown
+// Handle connection events
 process.on('beforeExit', async () => {
   await db.$disconnect()
 })

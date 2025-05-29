@@ -1,42 +1,12 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-const prismaClientSingleton = () => {
-  return new PrismaClient({
+export const db =
+  globalForPrisma.prisma ||
+  new PrismaClient({
     log: ['error', 'warn'],
-    errorFormat: 'pretty',
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      }
-    }
-  }).$extends({
-    query: {
-      $allOperations({ query, args }) {
-        const startTime = Date.now()
-        return query(args)
-          .then((result) => {
-            const duration = Date.now() - startTime
-            if (process.env.NODE_ENV !== 'production') {
-              console.log(`Query took ${duration}ms`)
-            }
-            return result
-          })
-          .catch((error) => {
-            console.error('Database operation failed:', {
-              error: error instanceof Error ? error.message : 'Unknown error',
-              args,
-              duration: Date.now() - startTime
-            })
-            throw error
-          })
-      }
-    }
   })
-}
-
-export const db = globalForPrisma.prisma ?? prismaClientSingleton()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 

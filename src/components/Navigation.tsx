@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export function Navigation() {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <nav className="bg-gray-900 border-b border-gray-800">
@@ -39,6 +42,50 @@ export function Navigation() {
               </Link>
             </div>
           </div>
+          
+          {/* Mobile menu button */}
+          <div className="sm:hidden">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <span className="sr-only">Open main menu</span>
+              {isMobileMenuOpen ? (
+                <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      <div className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className="px-2 pt-2 pb-3 space-y-1">
+          <Link
+            href="/"
+            className={`block px-3 py-2 rounded-md text-base font-medium ${
+              pathname === "/"
+                ? "bg-gray-800 text-white"
+                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/investments"
+            className={`block px-3 py-2 rounded-md text-base font-medium ${
+              pathname === "/investments"
+                ? "bg-gray-800 text-white"
+                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            }`}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            Investments
+          </Link>
         </div>
       </div>
     </nav>

@@ -6,11 +6,13 @@ import AddInvestmentDialog from "@/components/AddInvestmentDialog";
 import { useInvestments } from "@/context/InvestmentContext";
 import MonthlyInterestTable from "@/components/MonthlyInterestTable";
 import { EyeIcon, TrashIcon } from "@heroicons/react/20/solid";
+import { useRouter } from "next/navigation";
 
 export default function InvestmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState<string | null>(null);
   const { investments, addInvestment, deleteInvestment, loading, error } = useInvestments();
+  const router = useRouter();
 
   const handleAddInvestment = async (investment: {
     name: string;
@@ -19,10 +21,30 @@ export default function InvestmentsPage() {
     startDate: string;
     rateType: 'MONTHLY' | 'ANNUAL';
   }) => {
-    const success = await addInvestment(investment);
-    if (success) {
-      setIsDialogOpen(false);
+    const response = await fetch('/api/investments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...investment,
+        currentCapital: investment.initialCapital,
+        type: 'standard',
+        reinvestmentType: 'COMPOUND',
+        totalInterestEarned: 0,
+        totalReinvested: 0,
+        totalExpenses: 0,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to add investment');
+      return false;
     }
+
+    router.refresh();
+    setIsDialogOpen(false);
+    return true;
   };
 
   const handleDeleteInvestment = async (id: string) => {

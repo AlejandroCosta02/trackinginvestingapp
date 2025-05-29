@@ -31,44 +31,42 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    
-    // Validate the input data
-    if (!data.name || !data.initialCapital || !data.interestRate || !data.startDate || !data.rateType) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Validate rate type
-    if (data.rateType !== 'MONTHLY' && data.rateType !== 'ANNUAL') {
-      return NextResponse.json(
-        { error: "Rate type must be either 'MONTHLY' or 'ANNUAL'" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const {
+      name,
+      initialCapital,
+      currentCapital,
+      interestRate,
+      startDate,
+      type,
+      rateType,
+      reinvestmentType,
+      totalInterestEarned,
+      totalReinvested,
+      totalExpenses,
+    } = body;
 
     const investment = await db.investment.create({
       data: {
-        name: data.name,
-        initialCapital: parseFloat(data.initialCapital),
-        currentCapital: parseFloat(data.initialCapital),
-        interestRate: parseFloat(data.interestRate),
-        startDate: new Date(data.startDate),
-        rateType: data.rateType,
-        reinvestmentType: "COMPOUND",
-      },
-      include: {
-        monthlyInterests: true,
+        name,
+        initialCapital,
+        currentCapital,
+        interestRate,
+        startDate: new Date(startDate),
+        type,
+        rateType,
+        reinvestmentType,
+        totalInterestEarned,
+        totalReinvested,
+        totalExpenses,
       },
     });
 
     return NextResponse.json(investment);
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("Error creating investment:", error);
     return NextResponse.json(
-      { error: "Failed to create investment", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Failed to create investment" },
       { status: 500 }
     );
   }

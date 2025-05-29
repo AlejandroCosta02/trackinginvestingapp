@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { calculateMonthlyInterest } from "@/lib/utils";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const { month, amount } = await request.json();
     const investmentId = parseInt(params.id);
@@ -50,7 +47,6 @@ export async function POST(request: Request, { params }: RouteParams) {
     // Create the monthly interest record
     await db.monthlyInterest.create({
       data: {
-        id: Math.random().toString(36).substr(2, 9),
         amount,
         month: new Date(month),
         confirmed: true,

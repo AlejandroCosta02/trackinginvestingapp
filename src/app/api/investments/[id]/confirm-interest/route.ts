@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
-import { calculateMonthlyInterest } from "@/lib/utils";
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { month, amount } = await request.json();
+    const { month, amount, reinvestedAmount } = await request.json();
     const investmentId = parseInt(params.id);
 
-    // Validate input
-    if (!month || !amount) {
+    // Validate the input
+    if (!month || amount === undefined || reinvestedAmount === undefined) {
       return NextResponse.json(
-        { error: "Month and amount are required" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
@@ -21,9 +20,6 @@ export async function POST(
     // Get the investment
     const investment = await db.investment.findUnique({
       where: { id: investmentId },
-      include: {
-        monthlyInterests: true,
-      },
     });
 
     if (!investment) {
@@ -33,39 +29,41 @@ export async function POST(
       );
     }
 
-    // Calculate expected interest
-    const expectedInterest = calculateMonthlyInterest(investment);
-
-    // Validate amount
-    if (Math.abs(amount - expectedInterest) > 0.01) {
-      return NextResponse.json(
-        { error: "Invalid interest amount" },
-        { status: 400 }
-      );
-    }
-
-    // Create the monthly interest record
-    await db.monthlyInterest.create({
-      data: {
+    // Create or update the monthly interest record
+    const monthlyInterest = await db.monthlyInterest.upsert({
+      where: {
+        investmentId_month: {
+          investmentId,
+          month: new Date(month),
+        },
+      },
+      update: {
         amount,
-        month: new Date(month),
         confirmed: true,
         confirmedAt: new Date(),
-        investmentId: investment.id,
+        reinvested: reinvestedAmount > 0,
+      },
+      create: {
+        investmentId,
+        month: new Date(month),
+        amount,
+        confirmed: true,
+        confirmedAt: new Date(),
+        reinvested: reinvestedAmount > 0,
       },
     });
 
-    // Update investment's current capital
+    // Update the investment's current capital with the reinvested amount
     await db.investment.update({
-      where: { id: investment.id },
+      where: { id: investmentId },
       data: {
         currentCapital: {
-          increment: amount,
+          increment: reinvestedAmount,
         },
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(monthlyInterest);
   } catch (error) {
     console.error("Error confirming interest:", error);
     return NextResponse.json(

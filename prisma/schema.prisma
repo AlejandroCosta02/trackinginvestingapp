@@ -23,6 +23,9 @@ model Investment {
   monthlyInterests MonthlyInterest[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  totalInterestEarned Float         @default(0)
+  totalReinvested    Float         @default(0)
+  totalExpenses      Float         @default(0)
 
   @@index([createdAt(sort: Desc)])
 }
@@ -34,6 +37,8 @@ model MonthlyInterest {
   confirmed     Boolean     @default(false)
   confirmedAt   DateTime?
   reinvested    Boolean     @default(false)
+  reinvestedAmount Float    @default(0)
+  expensesAmount  Float    @default(0)
   investment    Investment  @relation(fields: [investmentId], references: [id], onDelete: Cascade)
   investmentId  Int
   createdAt     DateTime    @default(now())

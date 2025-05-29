@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 
-interface RouteContext {
-  params: {
-    id: string;
-  };
-}
-
 export async function DELETE(
   request: Request,
-  context: RouteContext
+  context: { params: { id: string } }
 ) {
   try {
     const id = parseInt(context.params.id);

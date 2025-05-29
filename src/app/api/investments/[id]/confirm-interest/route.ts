@@ -2,15 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { calculateMonthlyInterest } from "@/lib/utils";
 
-interface RouteContext {
-  params: {
-    id: string;
-  };
-}
-
 export async function POST(
   request: Request,
-  context: RouteContext
+  context: { params: { id: string } }
 ) {
   try {
     const { month, amount } = await request.json();

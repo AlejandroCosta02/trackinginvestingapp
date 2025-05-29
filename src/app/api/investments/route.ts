@@ -6,10 +6,55 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
+// Helper function to handle database errors
+const handleDatabaseError = (error: unknown) => {
+  console.error("API Error:", error);
+  
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    console.error("Database initialization error:", {
+      message: error.message,
+      clientVersion: error.clientVersion,
+      errorCode: error.errorCode,
+    });
+    return NextResponse.json(
+      { error: "Database connection failed", details: error.message },
+      { status: 500 }
+    );
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error("Known database error:", {
+      code: error.code,
+      meta: error.meta,
+      message: error.message,
+    });
+    return NextResponse.json(
+      { error: "Database operation failed", details: error.message },
+      { status: 500 }
+    );
+  }
+
+  if (error instanceof Prisma.PrismaClientUnknownRequestError) {
+    console.error("Unknown database error:", error.message);
+    return NextResponse.json(
+      { error: "Unexpected database error", details: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(
+    { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
+    { status: 500 }
+  );
+};
+
 export async function GET() {
   try {
-    console.log('API: Attempting to connect to database...');
-    console.log('API: Using database URL:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@'));
+    console.log('API: Attempting database connection...');
+    
+    // Test the connection first
+    await db.$connect();
+    console.log('API: Database connection successful');
     
     const investments = await db.investment.findMany({
       include: {
@@ -23,36 +68,13 @@ export async function GET() {
     console.log(`API: Successfully fetched ${investments.length} investments`);
     return NextResponse.json(investments);
   } catch (error) {
-    console.error("API: Failed to fetch investments:", error);
-    
-    if (error instanceof Prisma.PrismaClientInitializationError) {
-      console.error("API: Prisma initialization error:", {
-        clientVersion: error.clientVersion,
-        message: error.message,
-        logs: error.errorCode
-      });
-      return NextResponse.json(
-        { error: "Database connection failed. Please check your connection settings.", details: error.message },
-        { status: 500 }
-      );
+    return handleDatabaseError(error);
+  } finally {
+    try {
+      await db.$disconnect();
+    } catch (error) {
+      console.error("Error disconnecting from database:", error);
     }
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      console.error("API: Prisma known request error:", {
-        code: error.code,
-        message: error.message,
-        meta: error.meta
-      });
-      return NextResponse.json(
-        { error: "Database error. Please try again.", details: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: "An unexpected error occurred. Please try again later.", details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
   }
 }
 
@@ -76,6 +98,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Test the connection first
+    await db.$connect();
+
     const investment = await db.investment.create({
       data: {
         name: data.name,
@@ -93,18 +118,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json(investment);
   } catch (error) {
-    console.error("API: Failed to create investment:", error);
-    
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return NextResponse.json(
-        { error: "Database error. Please try again.", details: error.message },
-        { status: 500 }
-      );
+    return handleDatabaseError(error);
+  } finally {
+    try {
+      await db.$disconnect();
+    } catch (error) {
+      console.error("Error disconnecting from database:", error);
     }
-
-    return NextResponse.json(
-      { error: "Failed to create investment. Please try again later.", details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
   }
 } 

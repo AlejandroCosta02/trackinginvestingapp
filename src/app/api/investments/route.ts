@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
+import { Prisma } from '@prisma/client';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export async function GET() {
   try {
-    // Test database connection
-    await db.$connect();
-    console.log('Database connection successful');
+    console.log('Attempting to connect to database...');
     
     const investments = await db.investment.findMany({
       include: {
@@ -21,29 +24,37 @@ export async function GET() {
   } catch (error) {
     console.error("Failed to fetch investments:", error);
     
-    // Check if it's a connection error
-    if (error instanceof Error && error.message.includes('connect')) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      console.error("Prisma initialization error:", {
+        clientVersion: error.clientVersion,
+        message: error.message
+      });
       return NextResponse.json(
         { error: "Database connection failed. Please check your connection settings." },
         { status: 500 }
       );
     }
-    
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("Prisma known request error:", {
+        code: error.code,
+        message: error.message
+      });
+      return NextResponse.json(
+        { error: "Database error. Please try again." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Database error occurred while fetching investments" },
+      { error: "An unexpected error occurred. Please try again later." },
       { status: 500 }
     );
-  } finally {
-    await db.$disconnect();
   }
 }
 
 export async function POST(request: Request) {
   try {
-    // Test database connection
-    await db.$connect();
-    console.log('Database connection successful for POST');
-
     const data = await request.json();
     
     // Validate the input data
@@ -62,8 +73,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Creating investment with data:', data);
-
     const investment = await db.investment.create({
       data: {
         name: data.name,
@@ -79,24 +88,20 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log('Successfully created investment:', investment);
     return NextResponse.json(investment);
   } catch (error) {
     console.error("Failed to create investment:", error);
     
-    // Check if it's a connection error
-    if (error instanceof Error && error.message.includes('connect')) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return NextResponse.json(
-        { error: "Database connection failed. Please check your connection settings." },
+        { error: "Database error. Please try again." },
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: "Database error occurred while creating investment" },
+      { error: "Failed to create investment. Please try again later." },
       { status: 500 }
     );
-  } finally {
-    await db.$disconnect();
   }
 } 

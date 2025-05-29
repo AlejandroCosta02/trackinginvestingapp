@@ -5,25 +5,10 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 export const db =
   globalForPrisma.prisma ||
   new PrismaClient({
-    log: [
-      {
-        emit: 'event',
-        level: 'query',
-      },
-      {
-        emit: 'stdout',
-        level: 'error',
-      },
-      {
-        emit: 'stdout',
-        level: 'info',
-      },
-      {
-        emit: 'stdout',
-        level: 'warn',
-      },
-    ],
+    log: ['error', 'warn', 'info'],
   })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 
 // Log all database queries in development
 if (process.env.NODE_ENV !== 'production') {
@@ -34,4 +19,20 @@ if (process.env.NODE_ENV !== 'production') {
   })
 }
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db 
+// Handle connection errors
+db.$use(async (params, next) => {
+  try {
+    const result = await next(params)
+    return result
+  } catch (error) {
+    console.error('Database error:', {
+      error: error,
+      params: params,
+      modelName: params.model,
+      operation: params.action
+    })
+    throw error
+  }
+})
+
+export default db 

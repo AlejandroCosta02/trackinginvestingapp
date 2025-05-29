@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/prisma";
 
 export async function GET() {
   try {
     // Test database connection
-    await prisma.$connect();
+    await db.$connect();
     
-    const investments = await prisma.investment.findMany({
+    const investments = await db.investment.findMany({
       include: {
         monthlyInterests: true,
       },
@@ -24,14 +24,14 @@ export async function GET() {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    await db.$disconnect();
   }
 }
 
 export async function POST(request: Request) {
   try {
     // Test database connection
-    await prisma.$connect();
+    await db.$connect();
 
     const data = await request.json();
     
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const investment = await prisma.investment.create({
+    const investment = await db.investment.create({
       data: {
         name: data.name,
         initialCapital: parseFloat(data.initialCapital),
@@ -75,6 +75,6 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    await db.$disconnect();
   }
 } 

@@ -1,4 +1,5 @@
 import { addMonths, differenceInMonths, startOfMonth } from "date-fns";
+import type { Investment as PrismaInvestment } from "@prisma/client";
 
 export interface Investment {
   id: string;
@@ -25,7 +26,7 @@ export interface Investment {
   }>;
 }
 
-export const calculateMonthlyInterest = (investment: Investment): number => {
+export const calculateMonthlyInterest = (investment: Investment | PrismaInvestment): number => {
   const monthlyRate = investment.rateType === 'ANNUAL' 
     ? investment.interestRate / 100 / 12  // Convert annual rate to monthly
     : investment.interestRate / 100;      // Use monthly rate as is

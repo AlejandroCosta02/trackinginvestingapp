@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { calculateMonthlyInterest } from "@/lib/utils";
+import { type NextRequest } from "next/server";
 
 export async function POST(
-  request: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { month, amount } = await request.json();
+    const { month, amount } = await req.json();
     const investmentId = parseInt(params.id);
 
     // Validate input

@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import colors from 'tailwindcss/colors'
 
 const config: Config = {
   content: [
@@ -16,6 +17,8 @@ const config: Config = {
         '2xl': '1400px',
       },
     },
+    transparent: 'transparent',
+    current: 'currentColor',
     extend: {
       colors: {
         border: 'hsl(var(--border))',
@@ -53,31 +56,31 @@ const config: Config = {
         },
         tremor: {
           brand: {
-            faint: '#eff6ff',  // blue-50
-            muted: '#bfdbfe',  // blue-200
-            subtle: '#60a5fa', // blue-400
-            DEFAULT: '#3b82f6', // blue-500
-            emphasis: '#1d4ed8', // blue-700
-            inverted: '#ffffff', // white
+            faint: colors.blue[50],
+            muted: colors.blue[200],
+            subtle: colors.blue[400],
+            DEFAULT: colors.blue[500],
+            emphasis: colors.blue[700],
+            inverted: colors.white,
           },
           background: {
-            muted: '#f9fafb',  // gray-50
-            subtle: '#f3f4f6',  // gray-100
-            DEFAULT: '#ffffff',  // white
-            emphasis: '#374151', // gray-700
+            muted: colors.gray[50],
+            subtle: colors.gray[100],
+            DEFAULT: colors.white,
+            emphasis: colors.gray[700],
           },
           border: {
-            DEFAULT: '#e5e7eb',  // gray-200
+            DEFAULT: colors.gray[200],
           },
           ring: {
-            DEFAULT: '#e5e7eb',  // gray-200
+            DEFAULT: colors.gray[200],
           },
           content: {
-            subtle: '#9ca3af',  // gray-400
-            DEFAULT: '#6b7280',  // gray-500
-            emphasis: '#374151', // gray-700
-            strong: '#111827',  // gray-900
-            inverted: '#ffffff', // white
+            subtle: colors.gray[400],
+            DEFAULT: colors.gray[500],
+            emphasis: colors.gray[700],
+            strong: colors.gray[900],
+            inverted: colors.white,
           },
         },
         'dark-tremor': {
@@ -162,7 +165,7 @@ const config: Config = {
         /^(fill-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:50|100|200|300|400|500|600|700|800|900|950))$/,
     },
   ],
-  plugins: [require('@tremor/react/plugin')],
+  plugins: [],
 }
 
 export default config 

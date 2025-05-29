@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Title, Text, Grid } from "@tremor/react";
+import { Card, Title, Text, Grid, Metric } from "@tremor/react";
 import { ArrowTrendingUpIcon, BanknotesIcon, ChartBarIcon } from "@heroicons/react/24/outline";
 import { calculatePortfolioMetrics, formatCurrency } from "@/lib/utils";
 import { useInvestments } from "@/context/InvestmentContext";
@@ -12,7 +12,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">Loading investments...</div>
+        <div className="text-tremor-content">Loading investments...</div>
       </div>
     );
   }
@@ -20,57 +20,57 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-white">Portfolio Overview</h1>
-        <p className="mt-2 text-gray-400">
+        <Title className="text-tremor-content-strong">Portfolio Overview</Title>
+        <Text className="text-tremor-content mt-2">
           Track your investment performance and growth over time.
-        </p>
+        </Text>
       </div>
       
       <Grid numItems={1} numItemsSm={2} numItemsLg={3} className="gap-6">
         <Card 
-          className="bg-black/10 ring-1 ring-white/20 p-6"
+          className="bg-tremor-background-emphasis ring-1 ring-tremor-ring"
           decoration="top"
           decorationColor="blue"
         >
           <div className="flex items-center">
             <BanknotesIcon className="w-6 h-6 text-blue-500" />
             <div className="ml-4">
-              <Text className="text-gray-400">Total Capital Invested</Text>
-              <p className="text-xl font-medium text-white mt-1">
+              <Text className="text-tremor-content">Total Capital Invested</Text>
+              <Metric className="text-tremor-content-strong">
                 {formatCurrency(metrics.totalInvested)}
-              </p>
+              </Metric>
             </div>
           </div>
         </Card>
         
         <Card 
-          className="bg-black/10 ring-1 ring-white/20 p-6"
+          className="bg-tremor-background-emphasis ring-1 ring-tremor-ring"
           decoration="top"
           decorationColor="green"
         >
           <div className="flex items-center">
             <ArrowTrendingUpIcon className="w-6 h-6 text-green-500" />
             <div className="ml-4">
-              <Text className="text-gray-400">Total Earned</Text>
-              <p className="text-xl font-medium text-white mt-1">
+              <Text className="text-tremor-content">Total Earned</Text>
+              <Metric className="text-tremor-content-strong">
                 {formatCurrency(metrics.totalEarned)}
-              </p>
+              </Metric>
             </div>
           </div>
         </Card>
         
         <Card 
-          className="bg-black/10 ring-1 ring-white/20 p-6"
+          className="bg-tremor-background-emphasis ring-1 ring-tremor-ring"
           decoration="top"
           decorationColor="purple"
         >
           <div className="flex items-center">
             <ChartBarIcon className="w-6 h-6 text-purple-500" />
             <div className="ml-4">
-              <Text className="text-gray-400">Average Return Rate</Text>
-              <p className="text-xl font-medium text-white mt-1">
+              <Text className="text-tremor-content">Average Return Rate</Text>
+              <Metric className="text-tremor-content-strong">
                 {metrics.averageReturn.toFixed(1)}%
-              </p>
+              </Metric>
             </div>
           </div>
         </Card>

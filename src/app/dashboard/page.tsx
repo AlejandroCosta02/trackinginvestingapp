@@ -15,6 +15,8 @@ export default function DashboardPage() {
     averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / (investments.length || 1),
   };
 
+  console.log('Dashboard Metrics:', metrics); // Add this to debug
+
   if (loading) {
     return (
       <main className="p-4 md:p-10 mx-auto max-w-7xl">
@@ -72,20 +74,20 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-6">
-        <Card className="bg-gray-900 text-white">
+      <Card className="mt-6 bg-gray-900 text-white">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <CurrencyDollarIcon className="w-8 h-8 text-emerald-400" />
+            <CurrencyDollarIcon className="w-10 h-10 text-emerald-400" />
             <div>
               <p className="text-sm text-gray-400">Total Amount</p>
-              <p className="text-2xl font-semibold">${metrics.totalAmount.toLocaleString()}</p>
-            </div>
-            <div className="text-xs text-gray-400 ml-auto">
-              (Total Capital + Total Earned)
+              <p className="text-3xl font-semibold">${metrics.totalAmount.toLocaleString()}</p>
             </div>
           </div>
-        </Card>
-      </div>
+          <div className="text-sm text-gray-400">
+            (Total Capital + Total Earned)
+          </div>
+        </div>
+      </Card>
     </main>
   );
 } 

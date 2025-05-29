@@ -60,13 +60,14 @@ export default function InvestmentsPage() {
     }
   };
 
-  const handleInterestConfirm = async (investmentId: string, month: string, amount: number) => {
+  const handleInterestConfirm = async (investmentId: string, month: string, amount: number, reinvestedAmount: number) => {
     try {
       // Log the request data
       console.log('Confirming interest with data:', {
         investmentId,
         month,
         amount,
+        reinvestedAmount,
         investment: investments.find(inv => inv.id === investmentId)
       });
 
@@ -75,7 +76,7 @@ export default function InvestmentsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ month, amount }),
+        body: JSON.stringify({ month, amount, reinvestedAmount }),
       });
 
       const data = await response.json();
@@ -92,7 +93,7 @@ export default function InvestmentsPage() {
       console.log('Interest confirmed successfully:', data);
 
       // Refresh the investments list
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error("Error confirming interest:", error);
       alert(error instanceof Error ? error.message : "Failed to confirm interest. Please try again.");
@@ -198,7 +199,9 @@ export default function InvestmentsPage() {
               <MonthlyInterestTable
                 key={investment.id}
                 investment={investment}
-                onInterestConfirm={(month, amount) => handleInterestConfirm(investment.id, month, amount)}
+                onInterestConfirm={(month, amount, reinvestedAmount) => 
+                  handleInterestConfirm(investment.id, month, amount, reinvestedAmount)
+                }
               />
             )
           ))}

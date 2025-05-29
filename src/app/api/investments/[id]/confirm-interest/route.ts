@@ -4,11 +4,11 @@ import { calculateMonthlyInterest } from "@/lib/utils";
 
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { month, amount } = await request.json();
-    const investmentId = parseInt(context.params.id);
+    const investmentId = parseInt(params.id);
 
     // Validate input
     if (!month || !amount) {

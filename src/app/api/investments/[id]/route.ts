@@ -3,10 +3,10 @@ import { db } from "@/lib/prisma";
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(context.params.id);
+    const id = parseInt(params.id);
     
     if (!id) {
       return NextResponse.json(

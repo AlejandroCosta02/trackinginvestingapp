@@ -3,14 +3,17 @@ import { PrismaClient, Prisma } from '@prisma/client'
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 const prismaClientSingleton = () => {
+  // Vercel specific connection handling
+  const url = process.env.NODE_ENV === 'production'
+    ? process.env.DATABASE_URL?.replace('postgres://', 'postgresql://')
+    : process.env.DIRECT_URL?.replace('postgres://', 'postgresql://')
+
   return new PrismaClient({
     log: ['error', 'warn'],
     errorFormat: 'pretty',
     datasources: {
       db: {
-        url: process.env.NODE_ENV === 'production'
-          ? process.env.DATABASE_URL
-          : process.env.DIRECT_URL
+        url
       }
     }
   })

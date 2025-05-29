@@ -16,6 +16,11 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Helper function to parse currency input
+const parseCurrencyInput = (value: string): number => {
+  return parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0;
+};
+
 interface MonthlyInterestTableProps {
   investment: Investment;
   onInterestConfirm: (month: string, amount: number, reinvestedAmount: number) => Promise<void>;
@@ -30,8 +35,10 @@ interface ConfirmDialogProps {
 
 function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDialogProps) {
   const [totalAmount, setTotalAmount] = useState(expectedAmount);
-  const [reinvestedAmount, setReinvestedAmount] = useState(expectedAmount);
-  const expensesAmount = totalAmount - reinvestedAmount;
+  const [expensesAmount, setExpensesAmount] = useState(0);
+  
+  // Calculate reinvestment amount automatically
+  const reinvestedAmount = Math.max(0, totalAmount - expensesAmount);
 
   if (!isOpen) return null;
 
@@ -45,17 +52,17 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
               Total Interest Received
             </label>
             <input
-              type="number"
-              value={totalAmount}
+              type="text"
+              value={totalAmount.toLocaleString()}
               onChange={(e) => {
-                const value = parseFloat(e.target.value);
+                const value = parseCurrencyInput(e.target.value);
                 setTotalAmount(value);
-                if (value < reinvestedAmount) {
-                  setReinvestedAmount(value);
+                // Ensure expenses don't exceed total
+                if (value < expensesAmount) {
+                  setExpensesAmount(value);
                 }
               }}
-              className="w-full rounded-md bg-gray-700 border-gray-600 text-white"
-              step="0.01"
+              className="w-full rounded-md bg-gray-700 border-gray-600 text-white px-3 py-2"
             />
             <div className="text-sm text-gray-400 mt-1">
               Expected: {formatCurrency(expectedAmount)}
@@ -63,26 +70,28 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Amount to Reinvest
+              Amount for Expenses
             </label>
             <input
-              type="number"
-              value={reinvestedAmount}
+              type="text"
+              value={expensesAmount.toLocaleString()}
               onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                setReinvestedAmount(Math.min(value, totalAmount));
+                const value = parseCurrencyInput(e.target.value);
+                // Ensure expenses don't exceed total
+                setExpensesAmount(Math.min(value, totalAmount));
               }}
-              max={totalAmount}
-              className="w-full rounded-md bg-gray-700 border-gray-600 text-white"
-              step="0.01"
+              className="w-full rounded-md bg-gray-700 border-gray-600 text-white px-3 py-2"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Amount for Expenses
+              Amount to Reinvest
             </label>
-            <div className="text-white font-medium bg-gray-700 rounded-md p-2">
-              {formatCurrency(expensesAmount)}
+            <div className="text-white font-medium bg-gray-700 rounded-md p-3">
+              {formatCurrency(reinvestedAmount)}
+            </div>
+            <div className="text-sm text-gray-400 mt-1">
+              Automatically calculated: Total - Expenses
             </div>
           </div>
           <div className="flex justify-end space-x-3 mt-6">

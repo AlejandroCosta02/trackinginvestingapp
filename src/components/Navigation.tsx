@@ -7,20 +7,22 @@ export function Navigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-black border-b border-white/10">
+    <nav className="bg-black/40 border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-indigo-500">Investment Tracker</h1>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0">
+              <h1 className="text-xl font-bold text-white">
+                Investment <span className="text-indigo-500">Tracker</span>
+              </h1>
+            </Link>
+            <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
               <Link
                 href="/"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   pathname === "/" 
                     ? "border-indigo-500 text-white" 
-                    : "border-transparent text-gray-300 hover:border-gray-300 hover:text-gray-100"
+                    : "border-transparent text-gray-300 hover:border-gray-300 hover:text-white"
                 }`}
               >
                 Dashboard
@@ -30,7 +32,7 @@ export function Navigation() {
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   pathname === "/investments"
                     ? "border-indigo-500 text-white"
-                    : "border-transparent text-gray-300 hover:border-gray-300 hover:text-gray-100"
+                    : "border-transparent text-gray-300 hover:border-gray-300 hover:text-white"
                 }`}
               >
                 Investments

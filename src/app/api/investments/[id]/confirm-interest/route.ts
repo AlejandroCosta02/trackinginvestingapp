@@ -1,23 +1,16 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { isAfter, isBefore, startOfMonth, addMonths, format } from "date-fns";
+import prisma from "@/lib/prisma";
+import { calculateMonthlyInterest } from "@/lib/utils";
 
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    // Properly handle params
-    const { id } = context.params;
-    if (!id) {
-      return NextResponse.json(
-        { error: "Investment ID is required" },
-        { status: 400 }
-      );
-    }
-
     const { month, amount } = await request.json();
-    
+    const investmentId = parseInt(params.id);
+
+    // Validate input
     if (!month || !amount) {
       return NextResponse.json(
         { error: "Month and amount are required" },
@@ -25,9 +18,12 @@ export async function POST(
       );
     }
 
-    // Get the investment to check dates
+    // Get the investment
     const investment = await prisma.investment.findUnique({
-      where: { id }
+      where: { id: investmentId },
+      include: {
+        monthlyInterests: true,
+      },
     });
 
     if (!investment) {
@@ -37,99 +33,44 @@ export async function POST(
       );
     }
 
-    // Ensure we're working with UTC dates
-    const confirmationDate = new Date(month);
-    confirmationDate.setUTCHours(0, 0, 0, 0);
-    
-    const investmentStartDate = new Date(investment.startDate);
-    investmentStartDate.setUTCHours(0, 0, 0, 0);
+    // Calculate expected interest
+    const expectedInterest = calculateMonthlyInterest(investment);
 
-    // Set both dates to the start of their respective months
-    const confirmationMonth = startOfMonth(confirmationDate);
-    const startMonth = startOfMonth(investmentStartDate);
-    const firstInterestMonth = startOfMonth(addMonths(startMonth, 1));
-    const maxFutureDate = startOfMonth(addMonths(new Date(), 12)); // Allow up to 12 months in the future
+    // Validate amount
+    if (Math.abs(amount - expectedInterest) > 0.01) {
+      return NextResponse.json(
+        { error: "Invalid interest amount" },
+        { status: 400 }
+      );
+    }
 
-    console.log('Debug dates:', {
-      confirmationMonth: confirmationMonth.toISOString(),
-      startMonth: startMonth.toISOString(),
-      firstInterestMonth: firstInterestMonth.toISOString(),
-      maxFutureDate: maxFutureDate.toISOString(),
-      originalConfirmationDate: month,
-      originalStartDate: investment.startDate,
-      comparison: {
-        isBeforeFirstInterest: isBefore(confirmationMonth, firstInterestMonth),
-        isAfterMax: isAfter(confirmationMonth, maxFutureDate)
-      }
+    // Create the monthly interest record
+    await prisma.monthlyInterest.create({
+      data: {
+        id: Math.random().toString(36).substr(2, 9),
+        amount,
+        month: new Date(month),
+        confirmed: true,
+        confirmedAt: new Date(),
+        investmentId: investment.id,
+      },
     });
 
-    // Validate the confirmation date
-    if (isBefore(confirmationMonth, firstInterestMonth)) {
-      return NextResponse.json(
-        { error: `Cannot confirm interest for ${format(confirmationMonth, 'MMMM yyyy')} as interest starts from ${format(firstInterestMonth, 'MMMM yyyy')}` },
-        { status: 400 }
-      );
-    }
+    // Update investment's current capital
+    await prisma.investment.update({
+      where: { id: investment.id },
+      data: {
+        currentCapital: {
+          increment: amount,
+        },
+      },
+    });
 
-    if (isAfter(confirmationMonth, maxFutureDate)) {
-      return NextResponse.json(
-        { error: `Cannot confirm interest for dates more than 12 months in the future (max: ${format(maxFutureDate, 'MMMM yyyy')})` },
-        { status: 400 }
-      );
-    }
-
-    try {
-      // Create or update monthly interest
-      const monthlyInterest = await prisma.monthlyInterest.upsert({
-        where: {
-          investmentId_month: {
-            investmentId: id,
-            month: confirmationMonth
-          }
-        },
-        create: {
-          id: `${id}-${format(confirmationMonth, "yyyy-MM")}`,
-          investmentId: id,
-          month: confirmationMonth,
-          amount,
-          confirmed: true,
-          confirmedAt: new Date(),
-          reinvested: true,
-        },
-        update: {
-          confirmed: true,
-          confirmedAt: new Date(),
-          reinvested: true,
-          amount,
-        },
-      });
-
-      // Update investment's current capital
-      const updatedInvestment = await prisma.investment.update({
-        where: { id },
-        data: {
-          currentCapital: {
-            increment: amount,
-          },
-          updatedAt: new Date(),
-        },
-        include: {
-          monthlyInterests: true,
-        },
-      });
-
-      return NextResponse.json(updatedInvestment);
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      return NextResponse.json(
-        { error: "Failed to update database. Please try again." },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to confirm interest:", error);
+    console.error("Error confirming interest:", error);
     return NextResponse.json(
-      { error: "Failed to process request. Please try again." },
+      { error: "Failed to confirm interest" },
       { status: 500 }
     );
   }

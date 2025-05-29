@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Title, Text, Table, TableRow, TableCell, TableHead, TableHeaderCell, TableBody, Badge } from "@tremor/react";
+import { Card, Title, Text, Table, TableRow, TableCell, TableHead, TableHeaderCell, TableBody } from "@tremor/react";
 import { useState } from "react";
 import AddInvestmentDialog from "@/components/AddInvestmentDialog";
 import { useInvestments } from "@/context/InvestmentContext";

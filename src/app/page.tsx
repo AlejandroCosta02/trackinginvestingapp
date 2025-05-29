@@ -2,9 +2,9 @@
 
 import { Card, Title, Text } from "@tremor/react";
 import { ArrowTrendingUpIcon, BanknotesIcon, ChartBarIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
 import { calculatePortfolioMetrics, formatCurrency } from "@/lib/utils";
 import { useInvestments } from "@/context/InvestmentContext";
+import { Navigation } from "@/components/Navigation";
 
 export default function Home() {
   const { investments, loading } = useInvestments();

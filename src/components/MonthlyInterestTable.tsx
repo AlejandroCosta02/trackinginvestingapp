@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@tremor/react";
 import { Card, Badge } from "@tremor/react";
 import { Investment } from "@/lib/utils";
-import { addMonths, isBefore, startOfMonth, isAfter } from "date-fns";
+import { addMonths, startOfMonth, isAfter } from "date-fns";
 import { useState } from "react";
 import { calculateMonthlyInterest } from "@/lib/utils";
 import { TrashIcon } from "@heroicons/react/24/outline";

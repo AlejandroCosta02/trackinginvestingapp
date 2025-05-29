@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-let prisma: PrismaClient
+let prisma: PrismaClient | undefined
 
 if (typeof window === 'undefined') {
   if (process.env.NODE_ENV === 'production') {
@@ -21,4 +21,4 @@ if (typeof window === 'undefined') {
   }
 }
 
-export default prisma as PrismaClient 
+export const db = prisma || new PrismaClient() 

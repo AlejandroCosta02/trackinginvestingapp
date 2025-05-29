@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/prisma";
 import { calculateMonthlyInterest } from "@/lib/utils";
 
 export async function POST(
@@ -19,7 +19,7 @@ export async function POST(
     }
 
     // Get the investment
-    const investment = await prisma.investment.findUnique({
+    const investment = await db.investment.findUnique({
       where: { id: investmentId },
       include: {
         monthlyInterests: true,
@@ -45,7 +45,7 @@ export async function POST(
     }
 
     // Create the monthly interest record
-    await prisma.monthlyInterest.create({
+    await db.monthlyInterest.create({
       data: {
         id: Math.random().toString(36).substr(2, 9),
         amount,
@@ -57,7 +57,7 @@ export async function POST(
     });
 
     // Update investment's current capital
-    await prisma.investment.update({
+    await db.investment.update({
       where: { id: investment.id },
       data: {
         currentCapital: {

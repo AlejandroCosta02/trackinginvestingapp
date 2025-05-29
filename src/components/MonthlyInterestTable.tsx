@@ -6,6 +6,16 @@ import { addMonths, startOfMonth, isAfter } from "date-fns";
 import { useState } from "react";
 import { calculateMonthlyInterest } from "@/lib/utils";
 
+// Helper function to format currency with thousands separator
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 interface MonthlyInterestTableProps {
   investment: Investment;
   onInterestConfirm: (month: string, amount: number, reinvestedAmount: number) => Promise<void>;
@@ -47,6 +57,9 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
               className="w-full rounded-md bg-gray-700 border-gray-600 text-white"
               step="0.01"
             />
+            <div className="text-sm text-gray-400 mt-1">
+              Expected: {formatCurrency(expectedAmount)}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -69,7 +82,7 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
               Amount for Expenses
             </label>
             <div className="text-white font-medium bg-gray-700 rounded-md p-2">
-              ${expensesAmount.toFixed(2)}
+              {formatCurrency(expensesAmount)}
             </div>
           </div>
           <div className="flex justify-end space-x-3 mt-6">
@@ -175,15 +188,15 @@ export default function MonthlyInterestTable({
                   {format(month, "MMMM yyyy")}
                 </TableCell>
                 <TableCell className="text-white">
-                  ${expectedAmount.toFixed(2)}
+                  {formatCurrency(expectedAmount)}
                 </TableCell>
                 <TableCell className="text-white">
-                  {interest ? `$${interest.amount.toFixed(2)}` : "-"}
+                  {interest ? formatCurrency(interest.amount) : "-"}
                 </TableCell>
                 <TableCell className="text-white">
                   {interest ? (
                     interest.reinvested ? (
-                      `$${(interest.amount * 0.3).toFixed(2)}`
+                      formatCurrency(interest.reinvestedAmount)
                     ) : (
                       "Not reinvested"
                     )

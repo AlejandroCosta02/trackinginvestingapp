@@ -1,6 +1,19 @@
 import { addMonths, differenceInMonths, startOfMonth } from "date-fns";
 import type { Investment as PrismaInvestment } from "@prisma/client";
 
+export interface MonthlyInterest {
+  id: string;
+  amount: number;
+  month: string;
+  confirmed: boolean;
+  confirmedAt?: string;
+  reinvested: boolean;
+  reinvestedAmount: number;
+  expensesAmount: number;
+  investmentId: string;
+  createdAt: string;
+}
+
 export interface Investment {
   id: string;
   name: string;
@@ -9,29 +22,23 @@ export interface Investment {
   interestRate: number;
   startDate: string;
   type: string;
-  lastInterest: number;
-  createdAt?: string;
-  updatedAt?: string;
-  reinvestmentType?: 'COMPOUND' | 'WITHDRAWAL';
-  rateType: 'MONTHLY' | 'ANNUAL';
-  monthlyInterests?: Array<{
-    id: string;
-    amount: number;
-    month: string;
-    confirmed: boolean;
-    confirmedAt?: string;
-    reinvested: boolean;
-    investmentId: string;
-    createdAt: string;
-  }>;
+  rateType: string;
+  reinvestmentType: string;
+  monthlyInterests?: MonthlyInterest[];
+  createdAt: string;
+  updatedAt: string;
+  totalInterestEarned: number;
+  totalReinvested: number;
+  totalExpenses: number;
 }
 
-export const calculateMonthlyInterest = (investment: Investment | PrismaInvestment): number => {
-  const monthlyRate = investment.rateType === 'ANNUAL' 
-    ? investment.interestRate / 100 / 12  // Convert annual rate to monthly
-    : investment.interestRate / 100;      // Use monthly rate as is
-  return investment.currentCapital * monthlyRate;
-};
+export function calculateMonthlyInterest(investment: Investment): number {
+  const monthlyRate = investment.rateType === 'MONTHLY' 
+    ? investment.interestRate 
+    : investment.interestRate / 12;
+  
+  return investment.currentCapital * (monthlyRate / 100);
+}
 
 export const calculateTotalEarnings = (investment: Investment): number => {
   return investment.currentCapital - investment.initialCapital;

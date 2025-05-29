@@ -29,6 +29,9 @@ export async function POST(
       );
     }
 
+    // Calculate expenses amount
+    const expensesAmount = amount - reinvestedAmount;
+
     // Create or update the monthly interest record
     const monthlyInterest = await db.monthlyInterest.upsert({
       where: {
@@ -42,6 +45,8 @@ export async function POST(
         confirmed: true,
         confirmedAt: new Date(),
         reinvested: reinvestedAmount > 0,
+        reinvestedAmount,
+        expensesAmount,
       },
       create: {
         investmentId,
@@ -50,15 +55,26 @@ export async function POST(
         confirmed: true,
         confirmedAt: new Date(),
         reinvested: reinvestedAmount > 0,
+        reinvestedAmount,
+        expensesAmount,
       },
     });
 
-    // Update the investment's current capital with the reinvested amount
+    // Update the investment with new totals
     await db.investment.update({
       where: { id: investmentId },
       data: {
         currentCapital: {
           increment: reinvestedAmount,
+        },
+        totalInterestEarned: {
+          increment: amount,
+        },
+        totalReinvested: {
+          increment: reinvestedAmount,
+        },
+        totalExpenses: {
+          increment: expensesAmount,
         },
       },
     });

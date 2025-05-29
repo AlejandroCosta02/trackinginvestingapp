@@ -17,12 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-black`}>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} min-h-full bg-[#0a0a0a]`}>
         <InvestmentProvider>
           <div className="min-h-screen">
             <Navigation />
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <main className="max-w-7xl mx-auto p-4 md:p-10">
               {children}
             </main>
           </div>

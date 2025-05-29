@@ -3,17 +3,26 @@ import { PrismaClient, Prisma } from '@prisma/client'
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 const prismaClientSingleton = () => {
-  // Vercel specific connection handling
-  const url = process.env.NODE_ENV === 'production'
-    ? process.env.DATABASE_URL?.replace('postgres://', 'postgresql://')
-    : process.env.DIRECT_URL?.replace('postgres://', 'postgresql://')
-
   return new PrismaClient({
     log: ['error', 'warn'],
     errorFormat: 'pretty',
     datasources: {
       db: {
-        url
+        url: process.env.NODE_ENV === 'production'
+          ? process.env.DATABASE_URL
+          : process.env.DIRECT_URL
+      }
+    }
+  }).$extends({
+    query: {
+      $allOperations({ query, args }) {
+        return query(args).catch((error) => {
+          console.error('Database operation failed:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            args
+          })
+          throw error
+        })
       }
     }
   })
@@ -73,6 +82,10 @@ db.$use(async (params, next) => {
           }
         }
         if (error instanceof Prisma.PrismaClientInitializationError) {
+          console.error('Connection details:', {
+            url: process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@'),
+            nodeEnv: process.env.NODE_ENV
+          })
           throw new Error('Could not connect to the database. Please try again later.')
         }
         throw error

@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <Title>Portfolio Overview</Title>
       <Text>Track your investment performance and growth over time.</Text>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
         <Card className="bg-gray-900 text-white">
           <div className="flex items-center space-x-3">
             <BanknotesIcon className="w-8 h-8 text-blue-400" />

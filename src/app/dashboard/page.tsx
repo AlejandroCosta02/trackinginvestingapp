@@ -3,19 +3,36 @@
 import { Card, Text, Title } from "@tremor/react";
 import { useInvestments } from "@/context/InvestmentContext";
 import { WalletIcon, BanknotesIcon, ChartBarIcon, ScaleIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
   const { investments, loading, error } = useInvestments();
 
+  useEffect(() => {
+    // Log metrics calculation for debugging
+    const calculateMetrics = () => {
+      const metrics = {
+        totalInvested: investments.reduce((sum, inv) => sum + inv.initialCapital, 0),
+        totalEarned: investments.reduce((sum, inv) => sum + inv.totalInterestEarned, 0),
+        totalAmount: investments.reduce((sum, inv) => sum + inv.initialCapital + inv.totalInterestEarned, 0),
+        averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / (investments.length || 1),
+      };
+      console.log('Calculated metrics:', metrics);
+      console.log('Current investments:', investments);
+      return metrics;
+    };
+
+    if (investments.length > 0) {
+      calculateMetrics();
+    }
+  }, [investments]);
+
   const metrics = {
     totalInvested: investments.reduce((sum, inv) => sum + inv.initialCapital, 0),
-    currentAmount: investments.reduce((sum, inv) => sum + inv.currentCapital, 0),
     totalEarned: investments.reduce((sum, inv) => sum + inv.totalInterestEarned, 0),
     totalAmount: investments.reduce((sum, inv) => sum + inv.initialCapital + inv.totalInterestEarned, 0),
     averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / (investments.length || 1),
   };
-
-  console.log('Dashboard Metrics:', metrics); // Add this to debug
 
   if (loading) {
     return (
@@ -74,20 +91,23 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="mt-6 bg-gray-900 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <CurrencyDollarIcon className="w-10 h-10 text-emerald-400" />
-            <div>
-              <p className="text-sm text-gray-400">Total Amount</p>
-              <p className="text-3xl font-semibold">${metrics.totalAmount.toLocaleString()}</p>
+      {/* Total Amount Card */}
+      <div className="mt-6">
+        <Card className="bg-gray-900 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <CurrencyDollarIcon className="w-12 h-12 text-emerald-400" />
+              <div>
+                <p className="text-sm text-gray-400">Total Amount</p>
+                <p className="text-4xl font-bold">${metrics.totalAmount.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="text-sm text-gray-400 bg-gray-800 px-4 py-2 rounded-full">
+              Total Capital + Total Earned
             </div>
           </div>
-          <div className="text-sm text-gray-400">
-            (Total Capital + Total Earned)
-          </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </main>
   );
 } 

@@ -5,6 +5,7 @@ export async function GET() {
   try {
     // Test database connection
     await db.$connect();
+    console.log('Database connection successful');
     
     const investments = await db.investment.findMany({
       include: {
@@ -15,9 +16,18 @@ export async function GET() {
       },
     });
 
+    console.log(`Successfully fetched ${investments.length} investments`);
     return NextResponse.json(investments);
   } catch (error) {
     console.error("Failed to fetch investments:", error);
+    
+    // Check if it's a connection error
+    if (error instanceof Error && error.message.includes('connect')) {
+      return NextResponse.json(
+        { error: "Database connection failed. Please check your connection settings." },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json(
       { error: "Database error occurred while fetching investments" },
@@ -32,6 +42,7 @@ export async function POST(request: Request) {
   try {
     // Test database connection
     await db.$connect();
+    console.log('Database connection successful for POST');
 
     const data = await request.json();
     
@@ -51,6 +62,8 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log('Creating investment with data:', data);
+
     const investment = await db.investment.create({
       data: {
         name: data.name,
@@ -66,9 +79,18 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log('Successfully created investment:', investment);
     return NextResponse.json(investment);
   } catch (error) {
     console.error("Failed to create investment:", error);
+    
+    // Check if it's a connection error
+    if (error instanceof Error && error.message.includes('connect')) {
+      return NextResponse.json(
+        { error: "Database connection failed. Please check your connection settings." },
+        { status: 500 }
+      );
+    }
     
     return NextResponse.json(
       { error: "Database error occurred while creating investment" },

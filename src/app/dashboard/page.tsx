@@ -3,36 +3,32 @@
 import { Card, Text, Title } from "@tremor/react";
 import { useInvestments } from "@/context/InvestmentContext";
 import { WalletIcon, BanknotesIcon, ChartBarIcon, ScaleIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const { investments, loading, error } = useInvestments();
+  const [metrics, setMetrics] = useState({
+    totalInvested: 0,
+    totalEarned: 0,
+    totalAmount: 0,
+    averageReturn: 0,
+  });
 
   useEffect(() => {
-    // Log metrics calculation for debugging
-    const calculateMetrics = () => {
-      const metrics = {
-        totalInvested: investments.reduce((sum, inv) => sum + inv.initialCapital, 0),
-        totalEarned: investments.reduce((sum, inv) => sum + inv.totalInterestEarned, 0),
-        totalAmount: investments.reduce((sum, inv) => sum + inv.initialCapital + inv.totalInterestEarned, 0),
-        averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / (investments.length || 1),
-      };
-      console.log('Calculated metrics:', metrics);
-      console.log('Current investments:', investments);
-      return metrics;
-    };
-
-    if (investments.length > 0) {
-      calculateMetrics();
+    try {
+      if (investments.length > 0) {
+        const calculatedMetrics = {
+          totalInvested: investments.reduce((sum, inv) => sum + inv.initialCapital, 0),
+          totalEarned: investments.reduce((sum, inv) => sum + inv.totalInterestEarned, 0),
+          totalAmount: investments.reduce((sum, inv) => sum + inv.initialCapital + inv.totalInterestEarned, 0),
+          averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / investments.length,
+        };
+        setMetrics(calculatedMetrics);
+      }
+    } catch (err) {
+      console.error('Error calculating metrics:', err);
     }
   }, [investments]);
-
-  const metrics = {
-    totalInvested: investments.reduce((sum, inv) => sum + inv.initialCapital, 0),
-    totalEarned: investments.reduce((sum, inv) => sum + inv.totalInterestEarned, 0),
-    totalAmount: investments.reduce((sum, inv) => sum + inv.initialCapital + inv.totalInterestEarned, 0),
-    averageReturn: investments.reduce((sum, inv) => sum + inv.interestRate, 0) / (investments.length || 1),
-  };
 
   if (loading) {
     return (

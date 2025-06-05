@@ -176,7 +176,7 @@ export default function ContactPage() {
               <CheckCircleIcon className="mx-auto h-12 w-12 text-green-500" />
               <h3 className="mt-4 text-lg font-medium text-gray-900">Message Sent Successfully!</h3>
               <p className="mt-2 text-sm text-gray-500">
-                Thank you for reaching out. We'll get back to you as soon as possible.
+                We&apos;ll get back to you as soon as possible.
               </p>
             </div>
           </div>

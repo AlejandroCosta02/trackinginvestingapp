@@ -20,14 +20,18 @@ model Investment {
   type            String            @default("standard")
   rateType        RateType          @default(ANNUAL)
   reinvestmentType ReinvestmentType @default(COMPOUND)
+  profitLockPeriod Int              @default(1)
   monthlyInterests MonthlyInterest[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   totalInterestEarned Float         @default(0)
   totalReinvested    Float         @default(0)
   totalExpenses      Float         @default(0)
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
 
   @@index([createdAt(sort: Desc)])
+  @@index([userId])
 }
 
 model MonthlyInterest {
@@ -39,6 +43,7 @@ model MonthlyInterest {
   reinvested    Boolean     @default(false)
   reinvestedAmount Float    @default(0)
   expensesAmount  Float    @default(0)
+  interestRate    Float?    // Store the interest rate at confirmation time
   investment    Investment  @relation(fields: [investmentId], references: [id], onDelete: Cascade)
   investmentId  Int
   createdAt     DateTime    @default(now())
@@ -55,4 +60,51 @@ enum ReinvestmentType {
 enum RateType {
   MONTHLY
   ANNUAL
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+  investments   Investment[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

@@ -21,6 +21,10 @@ const config: Config = {
     current: 'currentColor',
     extend: {
       colors: {
+        // Custom brand colors
+        'brand-navy': '#1D3557',
+        'brand-gold': '#E9C46A',
+        'brand-bg': '#F8F9FA',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

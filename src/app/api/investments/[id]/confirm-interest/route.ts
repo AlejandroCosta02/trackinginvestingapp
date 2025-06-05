@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 
 export async function POST(
@@ -6,20 +8,27 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { month, amount, reinvestedAmount } = await request.json();
-    const investmentId = parseInt(params.id);
+    const session = await getServerSession(authOptions);
 
-    // Validate the input
-    if (!month || amount === undefined || reinvestedAmount === undefined) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Get the investment
-    const investment = await db.investment.findUnique({
-      where: { id: investmentId },
+    const investmentId = parseInt(params.id);
+    const { month, amount, reinvestedAmount } = await request.json();
+
+    // Verify investment ownership
+    const investment = await db.investment.findFirst({
+      where: {
+        id: investmentId,
+        userId: session.user.id,
+      },
+      include: {
+        monthlyInterests: true,
+      },
     });
 
     if (!investment) {
@@ -29,57 +38,36 @@ export async function POST(
       );
     }
 
-    // Calculate expenses amount
-    const expensesAmount = amount - reinvestedAmount;
-
-    // Create or update the monthly interest record
-    const monthlyInterest = await db.monthlyInterest.upsert({
-      where: {
-        investmentId_month: {
-          investmentId,
-          month: new Date(month),
-        },
-      },
-      update: {
+    // Create the monthly interest record
+    const monthlyInterest = await db.monthlyInterest.create({
+      data: {
         amount,
-        confirmed: true,
-        confirmedAt: new Date(),
-        reinvested: reinvestedAmount > 0,
-        reinvestedAmount,
-        expensesAmount,
-      },
-      create: {
-        investmentId,
         month: new Date(month),
-        amount,
         confirmed: true,
         confirmedAt: new Date(),
         reinvested: reinvestedAmount > 0,
         reinvestedAmount,
-        expensesAmount,
+        expensesAmount: amount - reinvestedAmount,
+        interestRate: investment.interestRate,
+        investmentId,
       },
     });
 
-    // Update the investment with new totals
-    await db.investment.update({
+    // Update the investment totals
+    const updatedInvestment = await db.investment.update({
       where: { id: investmentId },
       data: {
-        currentCapital: {
-          increment: reinvestedAmount,
-        },
-        totalInterestEarned: {
-          increment: amount,
-        },
-        totalReinvested: {
-          increment: reinvestedAmount,
-        },
-        totalExpenses: {
-          increment: expensesAmount,
-        },
+        currentCapital: investment.currentCapital + reinvestedAmount,
+        totalInterestEarned: investment.totalInterestEarned + amount,
+        totalReinvested: investment.totalReinvested + reinvestedAmount,
+        totalExpenses: investment.totalExpenses + (amount - reinvestedAmount),
+      },
+      include: {
+        monthlyInterests: true,
       },
     });
 
-    return NextResponse.json(monthlyInterest);
+    return NextResponse.json(updatedInvestment);
   } catch (error) {
     console.error("Error confirming interest:", error);
     return NextResponse.json(

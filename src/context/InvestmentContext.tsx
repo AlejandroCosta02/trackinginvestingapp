@@ -3,13 +3,26 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Investment } from "@/lib/utils";
 
+interface MonthlyInterest {
+  id: number;
+  amount: number;
+  month: Date;
+  confirmed: boolean;
+  confirmedAt?: Date;
+  reinvested: boolean;
+  reinvestedAmount: number;
+  expensesAmount: number;
+  investmentId: number;
+}
+
 interface InvestmentContextType {
   investments: Investment[];
-  addInvestment: (investment: Omit<Investment, "id" | "currentCapital" | "lastInterest" | "type">) => Promise<boolean>;
-  updateInvestment: (id: string, investment: Partial<Investment>) => Promise<boolean>;
-  deleteInvestment: (id: string) => Promise<boolean>;
+  addInvestment: (investment: Omit<Investment, "id" | "userId" | "currentCapital" | "totalInterestEarned" | "totalReinvested" | "totalExpenses" | "createdAt" | "updatedAt">) => Promise<boolean>;
+  updateInvestment: (id: number, investment: Partial<Investment>) => Promise<boolean>;
+  deleteInvestment: (id: number) => Promise<boolean>;
   loading: boolean;
   error: string | null;
+  setInvestments: React.Dispatch<React.SetStateAction<Investment[]>>;
 }
 
 const InvestmentContext = createContext<InvestmentContextType | undefined>(undefined);
@@ -19,32 +32,29 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load initial investments
   useEffect(() => {
-    const fetchInvestments = async () => {
-      try {
-        setError(null);
-        const response = await fetch("/api/investments");
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch investments");
-        }
-        const data = await response.json();
-        setInvestments(data);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
-        console.error("Error fetching investments:", errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchInvestments();
   }, []);
 
+  const fetchInvestments = async () => {
+    try {
+      setError(null);
+      const response = await fetch("/api/investments");
+      if (!response.ok) {
+        throw new Error("Failed to fetch investments");
+      }
+      const data = await response.json();
+      setInvestments(data);
+    } catch (err) {
+      console.error("Error fetching investments:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch investments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const addInvestment = async (
-    investment: Omit<Investment, "id" | "currentCapital" | "lastInterest" | "type">
+    investment: Omit<Investment, "id" | "userId" | "currentCapital" | "totalInterestEarned" | "totalReinvested" | "totalExpenses" | "createdAt" | "updatedAt">
   ): Promise<boolean> => {
     try {
       setError(null);
@@ -65,15 +75,14 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       setInvestments((prev) => [...prev, newInvestment]);
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
-      console.error("Error adding investment:", errorMessage);
-      setError(errorMessage);
+      console.error("Error adding investment:", err);
+      setError(err instanceof Error ? err.message : "Failed to add investment");
       return false;
     }
   };
 
   const updateInvestment = async (
-    id: string,
+    id: number,
     investment: Partial<Investment>
   ): Promise<boolean> => {
     try {
@@ -97,41 +106,29 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       );
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
-      console.error("Error updating investment:", errorMessage);
-      setError(errorMessage);
+      console.error("Error updating investment:", err);
+      setError(err instanceof Error ? err.message : "Failed to update investment");
       return false;
     }
   };
 
-  const deleteInvestment = async (id: string): Promise<boolean> => {
+  const deleteInvestment = async (id: number): Promise<boolean> => {
     try {
       setError(null);
-      console.log('Making delete request for investment:', id);
-      const response = await fetch(`/api/investments/${id}`, {
+      const response = await fetch(`/api/investments/${id.toString()}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Delete request failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        });
         throw new Error(errorData.error || "Failed to delete investment");
       }
 
-      console.log('Delete request successful');
       setInvestments((prev) => prev.filter((inv) => inv.id !== id));
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
-      console.error("Error deleting investment:", {
-        error: err,
-        message: errorMessage
-      });
-      setError(errorMessage);
+      console.error("Error deleting investment:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete investment");
       return false;
     }
   };
@@ -145,6 +142,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         deleteInvestment,
         loading,
         error,
+        setInvestments,
       }}
     >
       {children}

@@ -2,7 +2,7 @@ import { addMonths, differenceInMonths, startOfMonth } from "date-fns";
 import type { Investment as PrismaInvestment } from "@prisma/client";
 
 export interface MonthlyInterest {
-  id: string;
+  id: number;
   amount: number;
   month: string;
   confirmed: boolean;
@@ -10,12 +10,13 @@ export interface MonthlyInterest {
   reinvested: boolean;
   reinvestedAmount: number;
   expensesAmount: number;
-  investmentId: string;
+  interestRate: number;
+  investmentId: number;
   createdAt: string;
 }
 
 export interface Investment {
-  id: string;
+  id: number;
   name: string;
   initialCapital: number;
   currentCapital: number;
@@ -24,21 +25,28 @@ export interface Investment {
   type: string;
   rateType: string;
   reinvestmentType: string;
+  profitLockPeriod: number;
   monthlyInterests?: MonthlyInterest[];
   createdAt: string;
   updatedAt: string;
   totalInterestEarned: number;
   totalReinvested: number;
   totalExpenses: number;
+  userId: string;
 }
 
-export function calculateMonthlyInterest(investment: Investment): number {
-  const monthlyRate = investment.rateType === 'MONTHLY' 
-    ? investment.interestRate 
-    : investment.interestRate / 12;
+export const calculateMonthlyInterest = (investment: Investment): number => {
+  if (!investment || !investment.currentCapital || !investment.interestRate) {
+    return 0;
+  }
+
+  const monthlyRate = investment.rateType === 'ANNUAL' 
+    ? (investment.interestRate / 12) / 100  // Convert annual rate to monthly percentage
+    : investment.interestRate / 100;        // Use monthly rate as is
   
-  return investment.currentCapital * (monthlyRate / 100);
-}
+  // Calculate interest based on current capital
+  return Math.round((investment.currentCapital * monthlyRate) * 100) / 100;
+};
 
 export const calculateTotalEarnings = (investment: Investment): number => {
   return investment.currentCapital - investment.initialCapital;
@@ -91,6 +99,7 @@ export const calculatePortfolioMetrics = (investments: Investment[]) => {
       (sum, inv) => sum + (inv.currentCapital - inv.initialCapital),
       0
     ),
+    totalAmount: investments.reduce((sum, inv) => sum + inv.currentCapital, 0),
     averageReturn:
       investments.reduce((sum, inv) => sum + inv.interestRate, 0) /
       (investments.length || 1),

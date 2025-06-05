@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 // This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request })
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth/')
+  const isPublicPage = request.nextUrl.pathname === '/'
 
-  // Add security headers with more permissive CSP
+  // Add security headers
+  const response = NextResponse.next()
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval';
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https:;
     font-src 'self' data:;
-    connect-src 'self' https: wss: https://*.supabase.co https://*.vercel.app;
+    connect-src 'self' https: wss:;
     frame-ancestors 'none';
     worker-src 'self' blob: 'unsafe-eval';
     form-action 'self';
@@ -21,10 +25,8 @@ export function middleware(request: NextRequest) {
     media-src 'self' blob: data:;
     manifest-src 'self';
     object-src 'none';
-    storage-src 'self';
   `.replace(/\s{2,}/g, ' ').trim()
 
-  // Add security headers
   response.headers.set('Content-Security-Policy', cspHeader)
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
@@ -44,6 +46,22 @@ export function middleware(request: NextRequest) {
     response.headers.set('Expires', '0')
   }
 
+  // Authentication logic
+  if (isAuthPage) {
+    if (token) {
+      // Redirect to dashboard if user is already logged in
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
+
+  if (!token && !isPublicPage) {
+    // Redirect to login if accessing protected route without token
+    const redirectUrl = new URL('/auth/signin', request.url)
+    redirectUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+
   return response
 }
 
@@ -55,19 +73,12 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - robots.txt (robots file)
+     * Match all request paths except:
+     * 1. /api/auth/* (authentication endpoints)
+     * 2. /_next/static (static files)
+     * 3. /_next/image (image optimization files)
+     * 4. /favicon.ico (favicon file)
      */
-    {
-      source: '/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
+    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
   ],
 } 

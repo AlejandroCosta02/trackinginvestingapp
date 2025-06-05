@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useSession, signOut } from "next-auth/react";
@@ -21,9 +22,14 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="flex-shrink-0">
-              <h1 className="text-xl font-bold">
-                Invest<span className="text-brand-gold dark:text-yellow-500">Track</span>
-              </h1>
+              <Image
+                src="/images/logo.png"
+                alt="InvestTrack Logo"
+                width={150}
+                height={150}
+                className="h-14 w-14 rounded-full object-cover"
+                priority
+              />
             </Link>
             {isAuthenticated && (
               <div className="hidden sm:ml-10 sm:flex sm:space-x-8">

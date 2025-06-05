@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { EnvelopeIcon, UserIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -138,6 +139,15 @@ export default function ContactPage() {
       {/* Footer */}
       <footer className="bg-white py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center mb-8">
+            <Image
+              src="/images/logo.png"
+              alt="InvestTrack Logo"
+              width={180}
+              height={180}
+              className="h-20 w-20 rounded-full object-cover"
+            />
+          </div>
           <div className="max-w-md mx-auto text-center">
             <h3 className="text-xl font-semibold text-brand-navy mb-4">
               Stay Updated with Investment Insights

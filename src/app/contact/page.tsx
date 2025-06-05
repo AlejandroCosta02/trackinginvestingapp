@@ -143,9 +143,11 @@ export default function ContactPage() {
             <Image
               src="/images/logo.png"
               alt="InvestTrack Logo"
-              width={180}
-              height={180}
+              width={80}
+              height={80}
               className="h-20 w-20 rounded-full object-cover"
+              loading="eager"
+              quality={90}
             />
           </div>
           <div className="max-w-md mx-auto text-center">

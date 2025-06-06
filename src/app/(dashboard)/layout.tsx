@@ -24,24 +24,6 @@ export default function DashboardLayout({
       router.replace('/auth/signin');
       return;
     }
-
-    // If we have a session, ensure it's valid
-    const checkSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session');
-        const data = await response.json();
-        
-        if (!data || !data.user) {
-          console.log('Invalid session, redirecting to signin');
-          router.replace('/auth/signin');
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        router.replace('/auth/signin');
-      }
-    };
-
-    checkSession();
   }, [session, status, router]);
 
   if (status === 'loading') {

@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 export function NextAuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <ThemeProvider>{children}</ThemeProvider>
+      {children}
     </SessionProvider>
   );
 } 

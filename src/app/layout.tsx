@@ -23,8 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
-        <CurrencyProvider>
-          <NextAuthProvider>
+        <NextAuthProvider>
+          <CurrencyProvider>
             <Navigation />
             {children}
             <Toaster 
@@ -47,8 +47,8 @@ export default function RootLayout({
                 },
               }}
             />
-          </NextAuthProvider>
-        </CurrencyProvider>
+          </CurrencyProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );

@@ -5,8 +5,10 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { Suspense } from "react";
 
-export default function SignIn() {
+// Separate client component for handling search params
+function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -176,5 +178,18 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="text-brand-navy">Loading...</div>
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
   );
 } 

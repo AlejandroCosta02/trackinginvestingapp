@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { signIn } from "next-auth/react";
+import { Suspense } from "react";
 
-export default function SignUp() {
+function SignUpForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
@@ -189,5 +190,18 @@ export default function SignUp() {
         </form>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function SignUp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="text-brand-navy">Loading...</div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   );
 } 

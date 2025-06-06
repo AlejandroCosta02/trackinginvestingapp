@@ -19,6 +19,7 @@ function SignInForm() {
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
+      console.log('Session detected, redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [session, status, router]);
@@ -28,6 +29,13 @@ function SignInForm() {
     const registered = searchParams.get("registered");
     if (registered === "true") {
       toast.success("Registration successful! Please sign in.");
+    }
+
+    // Check for auth errors
+    const error = searchParams.get("error");
+    if (error) {
+      console.error("Auth error:", error);
+      toast.error(error === "OAuthSignin" ? "Could not sign in with Google" : error);
     }
   }, [searchParams]);
 
@@ -58,6 +66,25 @@ function SignInForm() {
       setError("An error occurred. Please try again.");
       toast.error("An error occurred. Please try again.");
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      
+      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      console.log('Initiating Google sign-in with callback:', callbackUrl);
+      
+      await signIn("google", {
+        callbackUrl,
+        redirect: true,
+      });
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast.error("Could not sign in with Google");
       setIsLoading(false);
     }
   };
@@ -149,18 +176,7 @@ function SignInForm() {
 
           <div className="mt-6">
             <button
-              onClick={() => {
-                setIsLoading(true);
-                const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-                signIn("google", { 
-                  callbackUrl: "/dashboard",
-                  redirect: true 
-                }).catch(error => {
-                  console.error("Google sign-in error:", error);
-                  toast.error("Could not sign in with Google");
-                  setIsLoading(false);
-                });
-              }}
+              onClick={handleGoogleSignIn}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >

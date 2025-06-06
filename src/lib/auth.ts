@@ -9,6 +9,10 @@ if (!process.env.NEXTAUTH_SECRET) {
   throw new Error("Please provide process.env.NEXTAUTH_SECRET");
 }
 
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  throw new Error("Please provide GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables");
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
@@ -16,6 +20,13 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     CredentialsProvider({
       name: "credentials",
@@ -70,7 +81,20 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("Sign in callback:", { 
+        user: { id: user.id, email: user.email },
+        provider: account?.provider
+      });
+      return true;
+    },
     async jwt({ token, user, account }) {
+      console.log("JWT callback:", { 
+        tokenSub: token.sub,
+        userId: user?.id,
+        provider: account?.provider
+      });
+      
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -78,6 +102,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log("Session callback:", {
+        userId: token.id,
+        userEmail: token.email
+      });
+      
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -85,23 +114,34 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Always redirect to dashboard after successful sign in
-      if (url.includes('/api/auth/signin') || url.includes('/api/auth/callback')) {
-        return `${baseUrl}/dashboard`;
+      console.log("Redirect callback:", { url, baseUrl });
+      
+      // Allows relative callback URLs
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
       }
-      // For all other cases, use the default behavior
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      // Default to dashboard
+      return `${baseUrl}/dashboard`;
+    }
   },
   events: {
     async signIn({ user, account, profile }) {
-      console.log("User signed in:", user.email);
+      console.log("User signed in event:", {
+        userId: user.id,
+        userEmail: user.email,
+        provider: account?.provider
+      });
     },
     async session({ session, token }) {
-      console.log("Session updated for user:", session.user?.email);
-    },
+      console.log("Session updated event:", {
+        userId: token.sub,
+        userEmail: session.user?.email
+      });
+    }
   },
   debug: process.env.NODE_ENV === "development",
 }; 

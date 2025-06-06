@@ -54,7 +54,7 @@ function SignUpForm() {
         throw new Error(data.error || "Registration failed");
       }
 
-      // After successful registration, attempt to sign in automatically
+      // After successful registration, attempt to sign in
       const signInResult = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
@@ -62,11 +62,15 @@ function SignUpForm() {
       });
 
       if (signInResult?.error) {
+        console.error("Auto-login failed:", signInResult.error);
         toast.error("Account created but couldn't sign in automatically. Please sign in manually.");
         router.push("/auth/signin?registered=true");
       } else {
         toast.success("Welcome to InvestTrack!");
+        // Wait a brief moment to ensure session is established
+        await new Promise(resolve => setTimeout(resolve, 500));
         router.push("/dashboard");
+        router.refresh(); // Force a refresh to update the navigation state
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "An error occurred";

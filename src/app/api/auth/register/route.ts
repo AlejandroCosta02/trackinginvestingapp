@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/prisma";
+import { Prisma, User } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -19,6 +20,9 @@ export async function POST(request: Request) {
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email },
+    }).catch(error => {
+      console.error("Database error checking existing user:", error);
+      throw new Error("Database connection error");
     });
 
     if (existingUser) {
@@ -33,7 +37,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await db.user.create({
+    const result = await db.user.create({
       data: {
         name,
         email,
@@ -41,9 +45,25 @@ export async function POST(request: Request) {
       },
     }).catch(error => {
       console.error("Database error creating user:", error);
-      throw error;
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          return NextResponse.json(
+            { error: "Email already exists" },
+            { status: 400 }
+          );
+        }
+      }
+      throw new Error("Failed to create user");
     });
 
+    if (!result || !(result as User)) {
+      return NextResponse.json(
+        { error: "Failed to create user" },
+        { status: 500 }
+      );
+    }
+
+    const user = result as User;
     console.log("User created successfully:", { id: user.id, email: user.email });
 
     // Remove password from response
@@ -52,8 +72,9 @@ export async function POST(request: Request) {
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
     console.error("Registration error:", error);
+    const message = error instanceof Error ? error.message : "Something went wrong during registration";
     return NextResponse.json(
-      { error: "Something went wrong during registration. Please try again." },
+      { error: message },
       { status: 500 }
     );
   }

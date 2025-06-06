@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

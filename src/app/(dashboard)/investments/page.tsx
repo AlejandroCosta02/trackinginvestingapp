@@ -25,6 +25,7 @@ export default function InvestmentsPage() {
     try {
       const success = await addInvestment({
         ...investment,
+        startDate: new Date(investment.startDate),
         type: 'standard',
         reinvestmentType: 'COMPOUND',
       });

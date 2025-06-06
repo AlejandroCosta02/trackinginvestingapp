@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Investment } from "@/lib/utils";
 
 interface MonthlyInterest {
@@ -31,18 +33,34 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
+    if (status === 'loading') return;
+
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
     fetchInvestments();
-  }, []);
+  }, [session, status, router]);
 
   const fetchInvestments = async () => {
     try {
       setError(null);
       const response = await fetch("/api/investments");
+      
+      if (response.status === 401) {
+        router.push('/auth/signin');
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error("Failed to fetch investments");
       }
+      
       const data = await response.json();
       setInvestments(data);
     } catch (err) {
@@ -65,6 +83,11 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify(investment),
       });
+
+      if (response.status === 401) {
+        router.push('/auth/signin');
+        return false;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -95,6 +118,11 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(investment),
       });
 
+      if (response.status === 401) {
+        router.push('/auth/signin');
+        return false;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to update investment");
@@ -119,6 +147,11 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
         method: "DELETE",
       });
 
+      if (response.status === 401) {
+        router.push('/auth/signin');
+        return false;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to delete investment");
@@ -132,6 +165,18 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
       return false;
     }
   };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <InvestmentContext.Provider

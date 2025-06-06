@@ -129,7 +129,7 @@ function SignInForm() {
                 href="/auth/signup"
                 className="font-medium text-brand-gold hover:text-opacity-90"
               >
-                Don't have an account? Sign up
+                Don&apos;t have an account? Sign up
               </Link>
             </div>
           </div>

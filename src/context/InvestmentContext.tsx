@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Investment } from "@/lib/utils";
@@ -36,18 +36,7 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    fetchInvestments();
-  }, [session, status, router]);
-
-  const fetchInvestments = async () => {
+  const fetchInvestments = useCallback(async () => {
     try {
       setError(null);
       const response = await fetch("/api/investments");
@@ -69,7 +58,18 @@ export function InvestmentProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    fetchInvestments();
+  }, [session, status, router, fetchInvestments]);
 
   const addInvestment = async (
     investment: Omit<Investment, "id" | "userId" | "currentCapital" | "totalInterestEarned" | "totalReinvested" | "totalExpenses" | "createdAt" | "updatedAt">

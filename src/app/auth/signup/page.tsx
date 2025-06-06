@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 export default function SignUp() {
   const router = useRouter();
@@ -12,19 +14,23 @@ export default function SignUp() {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
+      toast.error("Passwords do not match");
       return;
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const registerPromise = fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,15 +42,37 @@ export default function SignUp() {
         }),
       });
 
-      const data = await res.json();
+      const response = await toast.promise(registerPromise, {
+        loading: 'Creating your account...',
+        success: 'Account created successfully!',
+        error: 'Could not create account.',
+      });
 
-      if (!res.ok) {
-        throw new Error(data.error || "Something went wrong");
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Registration failed");
       }
 
-      router.push("/auth/signin?registered=true");
+      // After successful registration, attempt to sign in automatically
+      const signInResult = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        toast.error("Account created but couldn't sign in automatically. Please sign in manually.");
+        router.push("/auth/signin?registered=true");
+      } else {
+        toast.success("Welcome to InvestTrack!");
+        router.push("/dashboard");
+      }
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      const message = error instanceof Error ? error.message : "An error occurred";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,6 +117,7 @@ export default function SignUp() {
                 placeholder="Full name"
                 value={formData.name}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -105,6 +134,7 @@ export default function SignUp() {
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -121,6 +151,7 @@ export default function SignUp() {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -137,6 +168,7 @@ export default function SignUp() {
                 placeholder="Confirm password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -148,9 +180,10 @@ export default function SignUp() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-brand-navy bg-brand-gold hover:bg-brand-gold-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-brand-navy bg-brand-gold hover:bg-brand-gold-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              Create Account
+              {isLoading ? "Creating Account..." : "Create Account"}
             </button>
           </div>
         </form>

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { NextAuthProvider } from "@/components/Providers";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,26 @@ export default function RootLayout({
         <NextAuthProvider>
           <Navigation />
           {children}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 5000,
+              style: {
+                background: '#333',
+                color: '#fff',
+              },
+              success: {
+                style: {
+                  background: '#059669',
+                },
+              },
+              error: {
+                style: {
+                  background: '#dc2626',
+                },
+              },
+            }}
+          />
         </NextAuthProvider>
       </body>
     </html>

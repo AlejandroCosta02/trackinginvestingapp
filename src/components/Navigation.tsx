@@ -27,10 +27,9 @@ export function Navigation() {
                 alt="InvestTrack Logo"
                 width={56}
                 height={56}
-                className="h-14 w-14 rounded-full object-cover"
+                className="h-14 w-14 rounded-full object-contain bg-white"
                 priority
-                loading="eager"
-                quality={90}
+                unoptimized
               />
             </Link>
             {isAuthenticated && (

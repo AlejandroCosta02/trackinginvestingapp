@@ -152,17 +152,14 @@ function SignInForm() {
               onClick={() => {
                 setIsLoading(true);
                 const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-                toast.promise(
-                  signIn("google", { 
-                    callbackUrl,
-                    redirect: true 
-                  }),
-                  {
-                    loading: 'Connecting to Google...',
-                    success: 'Signed in with Google!',
-                    error: 'Could not sign in with Google',
-                  }
-                ).finally(() => setIsLoading(false));
+                signIn("google", { 
+                  callbackUrl: "/dashboard",
+                  redirect: true 
+                }).catch(error => {
+                  console.error("Google sign-in error:", error);
+                  toast.error("Could not sign in with Google");
+                  setIsLoading(false);
+                });
               }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}

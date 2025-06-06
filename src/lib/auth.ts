@@ -89,24 +89,53 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, profile }) {
       console.log("Sign in callback:", { 
         user: { id: user.id, email: user.email },
-        provider: account?.provider
+        provider: account?.provider,
+        profile: profile?.email
       });
+
+      // For Google authentication
+      if (account?.provider === "google") {
+        try {
+          // Check if user exists
+          const existingUser = await db.user.findUnique({
+            where: { email: user.email! }
+          });
+
+          if (!existingUser) {
+            // Create new user if doesn't exist
+            await db.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error in Google sign in:", error);
+          return false;
+        }
+      }
+
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, profile }) {
       console.log("JWT callback:", { 
         tokenSub: token.sub,
         userId: user?.id,
         provider: account?.provider
       });
-      
+
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
       }
+
       return token;
     },
     async session({ session, token }) {
@@ -114,41 +143,35 @@ export const authOptions: NextAuthOptions = {
         userId: token.id,
         userEmail: token.email
       });
-      
+
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        session.user.image = token.picture as string;
       }
+
       return session;
     },
     async redirect({ url, baseUrl }) {
       console.log("Redirect callback:", { url, baseUrl });
       
-      // Allows relative callback URLs
+      // Always redirect to dashboard after sign in
+      if (url.startsWith("/auth/signin") || url.includes("/api/auth/callback")) {
+        return `${baseUrl}/dashboard`;
+      }
+
+      // Allow relative URLs
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
       }
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) {
+
+      // Allow URLs from the same origin
+      if (new URL(url).origin === baseUrl) {
         return url;
       }
-      // Default to dashboard
-      return `${baseUrl}/dashboard`;
-    }
-  },
-  events: {
-    async signIn({ user, account, profile }) {
-      console.log("User signed in event:", {
-        userId: user.id,
-        userEmail: user.email,
-        provider: account?.provider
-      });
-    },
-    async session({ session, token }) {
-      console.log("Session updated event:", {
-        userId: token.sub,
-        userEmail: session.user?.email
-      });
+
+      return baseUrl;
     }
   },
   debug: process.env.NODE_ENV === "development",

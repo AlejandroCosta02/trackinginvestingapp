@@ -17,9 +17,13 @@ export default function SignInForm() {
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated' && session) {
-      router.push('/dashboard');
-    }
+    const checkAuth = async () => {
+      if (status === 'authenticated' && session) {
+        console.log('Session detected, redirecting to dashboard');
+        await router.push('/dashboard');
+      }
+    };
+    checkAuth();
   }, [session, status, router]);
 
   useEffect(() => {
@@ -63,13 +67,13 @@ export default function SignInForm() {
       });
 
       if (result?.error) {
+        console.error("Sign in error:", result.error);
         setError("Invalid email or password");
         toast.error("Invalid email or password");
       } else if (result?.ok) {
         toast.success("Welcome back!");
         const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-        router.push(callbackUrl);
-        router.refresh();
+        await router.push(callbackUrl);
       }
     } catch (error) {
       console.error("Sign-in error:", error);
@@ -88,13 +92,22 @@ export default function SignInForm() {
       const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
       console.log('Initiating Google sign-in with callback:', callbackUrl);
       
-      await signIn("google", {
+      const result = await signIn("google", {
         callbackUrl,
-        redirect: true,
+        redirect: false,
       });
+
+      if (result?.error) {
+        console.error("Google sign in error:", result.error);
+        toast.error("Could not sign in with Google");
+      } else if (result?.ok) {
+        toast.success("Welcome!");
+        await router.push(callbackUrl);
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Could not sign in with Google");
+    } finally {
       setIsLoading(false);
     }
   };

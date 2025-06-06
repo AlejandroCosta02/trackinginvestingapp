@@ -1,14 +1,18 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 export function NextAuthProvider({ children }: { children: React.ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>;
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      <ThemeProvider>
+    <NextAuthProvider>
+      <CurrencyProvider>
         {children}
-      </ThemeProvider>
-    </SessionProvider>
+      </CurrencyProvider>
+    </NextAuthProvider>
   );
 } 

@@ -14,8 +14,7 @@ export async function GET() {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { preferredCurrency: true },
+      where: { email: session.user.email }
     });
 
     return NextResponse.json({ 
@@ -50,8 +49,7 @@ export async function PUT(req: Request) {
 
     const user = await prisma.user.update({
       where: { email: session.user.email },
-      data: { preferredCurrency: currency },
-      select: { preferredCurrency: true },
+      data: { preferredCurrency: currency }
     });
 
     return NextResponse.json({ 

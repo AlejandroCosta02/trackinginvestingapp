@@ -6,20 +6,19 @@ import { addMonths, startOfMonth, isAfter, differenceInMonths, isSameMonth } fro
 import { useState } from "react";
 import { calculateMonthlyInterest } from "@/lib/utils";
 import { PencilIcon } from "@heroicons/react/20/solid";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
-// Helper function to format currency with thousands separator and 2 decimal places
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+// Helper function to format currency with thousand separators
+const formatNumber = (value: string) => {
+  // Remove any non-digit characters
+  const number = value.replace(/[^0-9]/g, '');
+  // Add thousand separators
+  return number.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
-// Helper function to parse currency input
-const parseCurrencyInput = (value: string): number => {
-  return parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0;
+// Helper function to parse formatted number back to raw value
+const parseFormattedNumber = (value: string) => {
+  return parseInt(value.replace(/[^0-9]/g, '')) || 0;
 };
 
 interface MonthlyInterestTableProps {
@@ -45,6 +44,7 @@ const isMonthAvailableForClaim = (investment: Investment, month: Date): boolean 
 
 function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDialogProps) {
   const [expensesAmount, setExpensesAmount] = useState(0);
+  const { currency } = useCurrency();
   
   // Calculate reinvestment amount automatically
   const reinvestedAmount = Math.max(0, expectedAmount - expensesAmount);
@@ -61,7 +61,10 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
               Total Interest Received
             </label>
             <div className="text-white font-medium bg-gray-700 rounded-md p-3">
-              {formatCurrency(expectedAmount)}
+              {new Intl.NumberFormat(currency.locale, {
+                style: 'currency',
+                currency: currency.code,
+              }).format(expectedAmount)}
             </div>
           </div>
           <div>
@@ -70,11 +73,14 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
             </label>
             <input
               type="text"
-              value={formatCurrency(expensesAmount)}
+              value={new Intl.NumberFormat(currency.locale, {
+                style: 'currency',
+                currency: currency.code,
+              }).format(expensesAmount)}
               onChange={(e) => {
-                const value = parseCurrencyInput(e.target.value);
+                const value = parseFloat(e.target.value.replace(/[^0-9.-]+/g, ""));
                 // Ensure expenses don't exceed total
-                setExpensesAmount(Math.min(value, expectedAmount));
+                setExpensesAmount(Math.min(value || 0, expectedAmount));
               }}
               className="w-full rounded-md bg-gray-700 border-gray-600 text-white px-3 py-2"
             />
@@ -84,7 +90,10 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, expectedAmount }: ConfirmDi
               Amount to Reinvest
             </label>
             <div className="text-white font-medium bg-gray-700 rounded-md p-3">
-              {formatCurrency(reinvestedAmount)}
+              {new Intl.NumberFormat(currency.locale, {
+                style: 'currency',
+                currency: currency.code,
+              }).format(reinvestedAmount)}
             </div>
             <div className="text-sm text-gray-400 mt-1">
               Automatically calculated: Total Interest - Expenses
@@ -152,6 +161,7 @@ export default function MonthlyInterestTable({
   const [confirmingMonth, setConfirmingMonth] = useState<Date | null>(null);
   const [isEditingRate, setIsEditingRate] = useState(false);
   const [newInterestRate, setNewInterestRate] = useState(investment.interestRate.toString());
+  const { currency } = useCurrency();
 
   const handleRateUpdate = async () => {
     try {
@@ -334,7 +344,10 @@ export default function MonthlyInterestTable({
                     {format(month, "MMMM yyyy")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                    {formatCurrency(expectedAmount)}
+                    {new Intl.NumberFormat(currency.locale, {
+                      style: 'currency',
+                      currency: currency.code,
+                    }).format(expectedAmount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {monthlyInterest?.confirmed ? (
@@ -350,9 +363,18 @@ export default function MonthlyInterestTable({
                       <div className="text-muted-foreground">
                         <div>Confirmed on {format(new Date(monthlyInterest.confirmedAt!), "MMM d, yyyy")}</div>
                         <div className="mt-1">
-                          <div>Received: {formatCurrency(monthlyInterest.amount)}</div>
-                          <div>Reinvested: {formatCurrency(monthlyInterest.reinvestedAmount)}</div>
-                          <div>Expenses: {formatCurrency(monthlyInterest.expensesAmount)}</div>
+                          <div>Received: {new Intl.NumberFormat(currency.locale, {
+                            style: 'currency',
+                            currency: currency.code,
+                          }).format(monthlyInterest.amount)}</div>
+                          <div>Reinvested: {new Intl.NumberFormat(currency.locale, {
+                            style: 'currency',
+                            currency: currency.code,
+                          }).format(monthlyInterest.reinvestedAmount)}</div>
+                          <div>Expenses: {new Intl.NumberFormat(currency.locale, {
+                            style: 'currency',
+                            currency: currency.code,
+                          }).format(monthlyInterest.expensesAmount)}</div>
                           <div className="mt-2 text-sm">
                             Rate when confirmed: {monthlyInterest.interestRate}% {investment.rateType === 'ANNUAL' ? '(Annual)' : '(Monthly)'}
                           </div>
@@ -385,17 +407,19 @@ export default function MonthlyInterestTable({
         </table>
       </div>
 
-      <ConfirmDialog
-        isOpen={!!confirmingMonth}
-        onClose={() => setConfirmingMonth(null)}
-        onConfirm={handleConfirmDialog}
-        expectedAmount={confirmingMonth ? calculateExpectedInterest(
-          investment, 
-          confirmingMonth, 
-          getMonthlyInterest(confirmingMonth),
-          investment.monthlyInterests || []
-        ) : 0}
-      />
+      {confirmingMonth && (
+        <ConfirmDialog
+          isOpen={true}
+          onClose={() => setConfirmingMonth(null)}
+          onConfirm={handleConfirmDialog}
+          expectedAmount={calculateExpectedInterest(
+            investment,
+            confirmingMonth,
+            getMonthlyInterest(confirmingMonth),
+            investment.monthlyInterests || []
+          )}
+        />
+      )}
     </Card>
   );
 } 

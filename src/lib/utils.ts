@@ -1,5 +1,8 @@
 import { addMonths, differenceInMonths, startOfMonth } from "date-fns";
 import type { Investment as PrismaInvestment } from "@prisma/client";
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { formatCurrency as formatCurrencyUtil } from "./currency";
 
 export interface MonthlyInterest {
   id: number;
@@ -15,24 +18,8 @@ export interface MonthlyInterest {
   createdAt: string;
 }
 
-export interface Investment {
-  id: number;
-  name: string;
-  initialCapital: number;
-  currentCapital: number;
-  interestRate: number;
-  startDate: string;
-  type: string;
-  rateType: string;
-  reinvestmentType: string;
-  profitLockPeriod: number;
+export interface Investment extends PrismaInvestment {
   monthlyInterests?: MonthlyInterest[];
-  createdAt: string;
-  updatedAt: string;
-  totalInterestEarned: number;
-  totalReinvested: number;
-  totalExpenses: number;
-  userId: string;
 }
 
 export const calculateMonthlyInterest = (investment: Investment): number => {
@@ -82,14 +69,7 @@ export const calculateCompoundInterest = (
   return principal * Math.pow(1 + monthlyRate, months);
 };
 
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
+export const formatCurrency = formatCurrencyUtil;
 
 export const calculatePortfolioMetrics = (investments: Investment[]) => {
   return {
@@ -104,4 +84,8 @@ export const calculatePortfolioMetrics = (investments: Investment[]) => {
       investments.reduce((sum, inv) => sum + inv.interestRate, 0) /
       (investments.length || 1),
   };
-}; 
+};
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+} 

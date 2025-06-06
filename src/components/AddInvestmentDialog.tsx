@@ -11,6 +11,7 @@ import {
   CalculatorIcon,
   CalendarIcon
 } from "@heroicons/react/24/solid";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 // Helper function to format currency with thousand separators
 const formatCurrency = (value: string) => {
@@ -28,14 +29,7 @@ const parseFormattedNumber = (value: string) => {
 interface AddInvestmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (investment: {
-    name: string;
-    initialCapital: number;
-    interestRate: number;
-    startDate: string;
-    rateType: 'MONTHLY' | 'ANNUAL';
-    profitLockPeriod: number;
-  }) => void;
+  onAdd: (investment: any) => void;
 }
 
 export default function AddInvestmentDialog({
@@ -43,12 +37,15 @@ export default function AddInvestmentDialog({
   onClose,
   onAdd,
 }: AddInvestmentDialogProps) {
+  const { currency } = useCurrency();
   const [formData, setFormData] = useState({
     name: "",
     initialCapital: "",
     interestRate: "",
-    startDate: new Date().toISOString().split("T")[0],
-    rateType: 'ANNUAL' as 'MONTHLY' | 'ANNUAL',
+    startDate: new Date().toISOString().split('T')[0],
+    type: "FIXED_INCOME",
+    rateType: "ANNUAL",
+    reinvestmentType: "PARTIAL",
     profitLockPeriod: 1,
   });
 
@@ -57,35 +54,24 @@ export default function AddInvestmentDialog({
     onAdd({
       ...formData,
       initialCapital: parseFormattedNumber(formData.initialCapital),
-      interestRate: parseFloat(formData.interestRate) || 0,
-      profitLockPeriod: formData.profitLockPeriod,
+      currentCapital: parseFormattedNumber(formData.initialCapital),
+      interestRate: parseFloat(formData.interestRate),
     });
     setFormData({
       name: "",
       initialCapital: "",
       interestRate: "",
-      startDate: new Date().toISOString().split("T")[0],
-      rateType: 'ANNUAL',
+      startDate: new Date().toISOString().split('T')[0],
+      type: "FIXED_INCOME",
+      rateType: "ANNUAL",
+      reinvestmentType: "PARTIAL",
       profitLockPeriod: 1,
     });
-    onClose();
-  };
-
-  const handleClose = () => {
-    setFormData({
-      name: "",
-      initialCapital: "",
-      interestRate: "",
-      startDate: new Date().toISOString().split("T")[0],
-      rateType: 'ANNUAL',
-      profitLockPeriod: 1,
-    });
-    onClose();
   };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={handleClose}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -109,14 +95,15 @@ export default function AddInvestmentDialog({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all relative">
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 <Dialog.Title
                   as="h3"
-                  className="text-2xl font-bold text-gray-900 mb-6"
+                  className="text-lg font-medium leading-6 text-gray-900 mb-4"
                 >
                   Add New Investment
                 </Dialog.Title>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <BuildingLibraryIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
@@ -124,27 +111,25 @@ export default function AddInvestmentDialog({
                     </label>
                     <input
                       type="text"
-                      className="w-full h-12 px-4 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 text-lg"
+                      className="w-full h-12 px-4 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
                       placeholder="Enter investment name"
                       value={formData.name}
-                      onChange={(e) => {
-                        const value = e.target.value.slice(0, 50); // Limit to 50 characters
-                        setFormData({ ...formData, name: value });
-                      }}
-                      maxLength={50}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       required
                     />
-                    <p className="mt-1 text-sm text-gray-500">
-                      Maximum 50 characters ({50 - formData.name.length} remaining)
-                    </p>
                   </div>
+
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <BanknotesIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
                       Initial Capital
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">$</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
+                        {currency.symbol}
+                      </span>
                       <input
                         type="text"
                         className="w-full h-12 px-10 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -158,51 +143,47 @@ export default function AddInvestmentDialog({
                       />
                     </div>
                   </div>
-                  <div className="md:col-span-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-base font-medium text-gray-700 flex items-center gap-2">
-                        <CalculatorIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-                        Interest Rate (%)
-                      </label>
-                      <div className="relative inline-block w-52">
-                        <div className="flex h-12 rounded-xl bg-gray-100 p-1 gap-1">
-                          <button
-                            type="button"
-                            className={`flex-1 relative flex items-center justify-center text-base font-medium rounded-lg px-4 py-1.5 transition-all duration-300 ease-in-out transform ${
-                              formData.rateType === 'MONTHLY'
-                                ? 'bg-indigo-600 text-white scale-100'
-                                : 'bg-transparent text-gray-500 scale-95 hover:bg-gray-200'
-                            }`}
-                            onClick={() =>
-                              setFormData({
-                                ...formData,
-                                rateType: 'MONTHLY',
-                                interestRate: ''
-                              })
-                            }
-                          >
-                            Monthly
-                          </button>
-                          <button
-                            type="button"
-                            className={`flex-1 relative flex items-center justify-center text-base font-medium rounded-lg px-4 py-1.5 transition-all duration-300 ease-in-out transform ${
-                              formData.rateType === 'ANNUAL'
-                                ? 'bg-indigo-600 text-white scale-100'
-                                : 'bg-transparent text-gray-500 scale-95 hover:bg-gray-200'
-                            }`}
-                            onClick={() =>
-                              setFormData({
-                                ...formData,
-                                rateType: 'ANNUAL',
-                                interestRate: ''
-                              })
-                            }
-                          >
-                            Annual
-                          </button>
-                        </div>
-                      </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <CalculatorIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                      Interest Rate Type
+                    </label>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.rateType === "ANNUAL"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, rateType: "ANNUAL" })
+                        }
+                      >
+                        Annual
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.rateType === "MONTHLY"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, rateType: "MONTHLY" })
+                        }
+                      >
+                        Monthly
+                      </button>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <CalculatorIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                      Interest Rate
+                    </label>
                     <div className="relative">
                       <input
                         type="number"
@@ -225,6 +206,7 @@ export default function AddInvestmentDialog({
                         : 'Enter the monthly interest rate (0-20%). For example: 1% per month'}
                     </p>
                   </div>
+
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <CalendarIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
@@ -232,7 +214,7 @@ export default function AddInvestmentDialog({
                     </label>
                     <input
                       type="date"
-                      className="w-full h-12 px-4 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 text-lg"
+                      className="w-full h-12 px-4 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
                       value={formData.startDate}
                       onChange={(e) =>
                         setFormData({ ...formData, startDate: e.target.value })
@@ -240,75 +222,137 @@ export default function AddInvestmentDialog({
                       required
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2">
+                      Investment Type
+                    </label>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.type === "FIXED_INCOME"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, type: "FIXED_INCOME" })
+                        }
+                      >
+                        Fixed Income
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.type === "VARIABLE_INCOME"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, type: "VARIABLE_INCOME" })
+                        }
+                      >
+                        Variable Income
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium text-gray-700 mb-2">
+                      Reinvestment Type
+                    </label>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.reinvestmentType === "TOTAL"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, reinvestmentType: "TOTAL" })
+                        }
+                      >
+                        Total
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.reinvestmentType === "PARTIAL"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, reinvestmentType: "PARTIAL" })
+                        }
+                      >
+                        Partial
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex-1 h-12 px-4 rounded-lg border-2 ${
+                          formData.reinvestmentType === "NONE"
+                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                        onClick={() =>
+                          setFormData({ ...formData, reinvestmentType: "NONE" })
+                        }
+                      >
+                        None
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2 flex items-center gap-2">
                       <LockClosedIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-                      Receive Profit After (months)
+                      Profit Lock Period (months)
                     </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        className="w-full h-12 px-4 pr-20 rounded-lg border-2 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="Enter months"
-                        value={formData.profitLockPeriod}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (!isNaN(value) && value >= 1 && value <= 60) {
-                            setFormData({ ...formData, profitLockPeriod: value });
-                          }
-                        }}
-                        required
-                      />
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                        <button
-                          type="button"
-                          className="p-1 hover:bg-gray-100 rounded"
-                          onClick={() => {
-                            if (formData.profitLockPeriod < 60) {
-                              setFormData({ 
-                                ...formData, 
-                                profitLockPeriod: formData.profitLockPeriod + 1 
-                              });
-                            }
-                          }}
-                        >
-                          <ChevronUpIcon className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-1 hover:bg-gray-100 rounded"
-                          onClick={() => {
-                            if (formData.profitLockPeriod > 1) {
-                              setFormData({ 
-                                ...formData, 
-                                profitLockPeriod: formData.profitLockPeriod - 1 
-                              });
-                            }
-                          }}
-                        >
-                          <ChevronDownIcon className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        className="h-12 w-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            profitLockPeriod: Math.max(1, prev.profitLockPeriod - 1),
+                          }))
+                        }
+                      >
+                        <ChevronDownIcon className="h-6 w-6" />
+                      </button>
+                      <span className="text-2xl font-medium text-gray-900 w-12 text-center">
+                        {formData.profitLockPeriod}
+                      </span>
+                      <button
+                        type="button"
+                        className="h-12 w-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            profitLockPeriod: prev.profitLockPeriod + 1,
+                          }))
+                        }
+                      >
+                        <ChevronUpIcon className="h-6 w-6" />
+                      </button>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Specify how many months must pass before you can claim profits (1-60 months)
-                    </p>
                   </div>
-                  <div className="md:col-span-2 flex justify-end gap-4 mt-4">
+
+                  <div className="mt-6 flex justify-end gap-4">
                     <button
                       type="button"
-                      onClick={handleClose}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors duration-200 text-base"
+                      className="h-12 px-6 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={onClose}
                     >
-                      <TrashIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                      <span>Cancel</span>
+                      Cancel
                     </button>
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 transition-colors duration-200 text-base"
+                      className="h-12 px-6 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                     >
-                      <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                      <span>Add Investment</span>
+                      Add Investment
                     </button>
                   </div>
                 </form>

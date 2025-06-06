@@ -9,6 +9,9 @@ import { EyeIcon, TrashIcon } from "@heroicons/react/20/solid";
 import { Investment, formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function InvestmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState<number | null>(null);

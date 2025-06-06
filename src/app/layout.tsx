@@ -12,6 +12,9 @@ export const metadata = {
   description: "Track your investments and earnings",
 };
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: {

@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { InvestmentProvider } from "@/context/InvestmentContext";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({
   children,
 }: {

@@ -7,6 +7,21 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { Suspense } from "react";
 
+// Safe localStorage wrapper
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(key, value);
+    }
+  }
+};
+
 // Separate client component for handling search params
 function SignInForm() {
   const router = useRouter();
@@ -17,8 +32,16 @@ function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only run on client side
+    if (!mounted) return;
+
     // Check if Google OAuth is configured
     const checkGoogleAuth = async () => {
       try {
@@ -32,16 +55,20 @@ function SignInForm() {
     };
     
     checkGoogleAuth();
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
+
     if (status === 'authenticated' && session) {
       console.log('Session detected, redirecting to dashboard');
       router.push('/dashboard');
     }
-  }, [session, status, router]);
+  }, [session, status, router, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
+
     // Check if user just registered
     const registered = searchParams.get("registered");
     if (registered === "true") {
@@ -54,10 +81,12 @@ function SignInForm() {
       console.error("Auth error:", error);
       toast.error(error === "OAuthSignin" ? "Could not sign in with Google" : error);
     }
-  }, [searchParams]);
+  }, [searchParams, mounted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mounted) return;
+
     setIsLoading(true);
     setError("");
 
@@ -88,6 +117,8 @@ function SignInForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!mounted) return;
+
     try {
       setIsLoading(true);
       setError("");
@@ -105,6 +136,11 @@ function SignInForm() {
       setIsLoading(false);
     }
   };
+
+  // Don't render anything until mounted
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

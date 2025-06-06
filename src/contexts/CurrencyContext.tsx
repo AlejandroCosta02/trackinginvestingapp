@@ -22,25 +22,16 @@ export const useCurrency = () => {
 };
 
 // Safe localStorage wrapper
-const safeStorage = {
+const safeLocalStorage = {
   getItem: (key: string): string | null => {
-    try {
-      if (typeof window !== 'undefined') {
-        return window.localStorage.getItem(key);
-      }
-      return null;
-    } catch (error) {
-      console.error('Error accessing localStorage:', error);
-      return null;
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem(key);
     }
+    return null;
   },
   setItem: (key: string, value: string): void => {
-    try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, value);
-      }
-    } catch (error) {
-      console.error('Error setting localStorage:', error);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(key, value);
     }
   }
 };
@@ -49,7 +40,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const [currency, setCurrencyState] = useState<CurrencyConfig>(() => {
     // Initialize with saved preference if available
-    const savedCurrency = safeStorage.getItem('preferredCurrency');
+    const savedCurrency = safeLocalStorage.getItem('preferredCurrency');
     if (savedCurrency) {
       const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === savedCurrency);
       if (currencyConfig) {
@@ -59,8 +50,10 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_CURRENCY;
   });
 
-  // Load saved currency preference
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     const loadCurrency = async () => {
       try {
         // If user is logged in, try to fetch their preference from the API
@@ -71,7 +64,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
             const currencyConfig = SUPPORTED_CURRENCIES.find(c => c.code === data.preferredCurrency);
             if (currencyConfig) {
               setCurrencyState(currencyConfig);
-              safeStorage.setItem('preferredCurrency', currencyConfig.code);
+              safeLocalStorage.setItem('preferredCurrency', currencyConfig.code);
               return;
             }
           }
@@ -84,10 +77,20 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     loadCurrency();
   }, [session]);
 
+  useEffect(() => {
+    if (mounted) {
+      safeLocalStorage.setItem('preferredCurrency', currency.code);
+    }
+  }, [currency, mounted]);
+
+  // Don't render anything until mounted
+  if (!mounted) {
+    return null;
+  }
+
   // Update currency preference
   const handleSetCurrency = async (newCurrency: CurrencyConfig) => {
     setCurrencyState(newCurrency);
-    safeStorage.setItem('preferredCurrency', newCurrency.code);
 
     // Only update in database if user is logged in
     if (session?.user) {

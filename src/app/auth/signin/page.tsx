@@ -41,7 +41,10 @@ function SignInForm() {
         toast.error("Invalid email or password");
       } else {
         toast.success("Welcome back!");
-        router.push("/dashboard");
+        // Get the callback URL from the search params or default to dashboard
+        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+        router.push(callbackUrl);
+        router.refresh(); // Force a refresh to update the navigation state
       }
     } catch (error) {
       setError("An error occurred. Please try again.");
@@ -137,16 +140,18 @@ function SignInForm() {
           <div className="mt-6">
             <button
               onClick={() => {
+                setIsLoading(true);
+                const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
                 toast.promise(
-                  signIn("google", { callbackUrl: "/dashboard" }),
+                  signIn("google", { callbackUrl }),
                   {
                     loading: 'Connecting to Google...',
                     success: 'Signed in with Google!',
                     error: 'Could not sign in with Google',
                   }
-                );
+                ).finally(() => setIsLoading(false));
               }}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               <svg

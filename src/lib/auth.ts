@@ -50,17 +50,33 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/auth/signin",
+    signOut: "/auth/signout",
+    error: "/auth/error",
   },
   callbacks: {
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub!;
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
+  events: {
+    async signIn({ user, account, profile }) {
+      // You can add custom logic here when a user signs in
+      console.log("User signed in:", user.email);
+    },
+  },
+  debug: process.env.NODE_ENV === "development",
 }; 

@@ -4,20 +4,34 @@ import { getToken } from 'next-auth/jwt'
 
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
+  // Get the pathname
+  const pathname = request.nextUrl.pathname
+
+  // Define path patterns
+  const isAuthPage = pathname.startsWith('/auth/')
+  const isPublicPage = pathname === '/'
+  const isApiAuthRoute = pathname.startsWith('/api/auth/')
+  const isApiRoute = pathname.startsWith('/api/')
+  const isStaticAsset = pathname.startsWith('/_next/static/') || 
+                       pathname.startsWith('/static/') ||
+                       pathname.startsWith('/images/') ||
+                       pathname.endsWith('.ico')
+
+  // Skip middleware for static assets and API routes
+  if (isStaticAsset || isApiRoute) {
+    return NextResponse.next()
+  }
+
+  // Get the token
   const token = await getToken({ 
     req: request,
     secret: process.env.NEXTAUTH_SECRET 
   });
-  
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth/')
-  const isPublicPage = request.nextUrl.pathname === '/'
-  const isApiAuthRoute = request.nextUrl.pathname.startsWith('/api/auth/')
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
 
-  // Add security headers
+  // Create base response
   const response = NextResponse.next()
   
-  // Don't add CSP headers to API routes
+  // Add security headers for non-API routes
   if (!isApiRoute) {
     const cspHeader = `
       default-src 'self';
@@ -40,39 +54,31 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   }
 
-  // Skip auth check for API auth routes
-  if (isApiAuthRoute) {
-    return response;
-  }
-
-  // Add cache control headers
-  const isStaticAsset = request.nextUrl.pathname.startsWith('/_next/static/') || 
-                       request.nextUrl.pathname.startsWith('/static/')
-  
-  if (isStaticAsset) {
-    // Cache static assets for 1 year
-    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
-  } else {
-    // No cache for dynamic content
-    response.headers.set('Cache-Control', 'no-store, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
-  }
-
-  // Authentication logic
+  // Handle authentication redirects
   if (isAuthPage) {
     if (token) {
-      // Redirect to dashboard if user is already logged in
+      // If user is already logged in and tries to access auth pages, redirect to dashboard
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return response
   }
 
+  // Protected routes check
   if (!token && !isPublicPage && !isApiAuthRoute) {
-    // Redirect to login if accessing protected route without token
+    // Store the original URL to redirect back after login
     const redirectUrl = new URL('/auth/signin', request.url)
-    redirectUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+    if (pathname !== '/dashboard') {
+      redirectUrl.searchParams.set('callbackUrl', pathname)
+    }
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Add cache control headers
+  if (isStaticAsset) {
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+  } else {
+    // Use a less aggressive caching strategy for dynamic content
+    response.headers.set('Cache-Control', 'private, no-cache, must-revalidate')
   }
 
   return response

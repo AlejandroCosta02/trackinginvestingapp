@@ -72,8 +72,11 @@ export default function SignInForm() {
         toast.error("Invalid email or password");
       } else if (result?.ok) {
         toast.success("Welcome back!");
+        // Wait for session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-        await router.push(callbackUrl);
+        router.push(callbackUrl);
+        router.refresh(); // Force a refresh to update the navigation state
       }
     } catch (error) {
       console.error("Sign-in error:", error);
@@ -102,7 +105,10 @@ export default function SignInForm() {
         toast.error("Could not sign in with Google");
       } else if (result?.ok) {
         toast.success("Welcome!");
+        // Wait for session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await router.push(callbackUrl);
+        router.refresh(); // Force a refresh to update the navigation state
       }
     } catch (error) {
       console.error("Google sign-in error:", error);

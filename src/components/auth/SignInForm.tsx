@@ -245,8 +245,9 @@ export default function SignInForm() {
         )}
 
         <div className="text-center">
+          {/* eslint-disable-next-line react/no-unescaped-entities */}
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
               className="font-medium text-brand-gold hover:text-brand-gold-dark"

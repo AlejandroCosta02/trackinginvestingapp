@@ -133,9 +133,9 @@ export default function SignInForm() {
       setIsLoading(true);
       setError("");
       
-      console.log('Initiating Google sign-in...');
+      console.log("Initiating Google sign-in...");
       
-      // Use window.location.origin to ensure we're using the correct base URL
+      // Use window.location.origin to ensure we&apos;re using the correct base URL
       const callbackUrl = `${window.location.origin}/dashboard`;
       await signIn("google", {
         callbackUrl,

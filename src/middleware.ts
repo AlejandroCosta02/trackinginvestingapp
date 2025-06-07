@@ -35,16 +35,16 @@ export async function middleware(request: NextRequest) {
   if (!isApiRoute) {
     const cspHeader = `
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://trackinginvestingapp.vercel.app;
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https:;
       font-src 'self' data:;
       connect-src 'self' https: wss:;
       frame-ancestors 'none';
-      worker-src 'self' blob: 'unsafe-eval';
+      worker-src 'self' blob:;
       form-action 'self';
       base-uri 'self';
-      frame-src 'self';
+      frame-src 'self' https://accounts.google.com;
       media-src 'self' blob: data:;
     `.replace(/\s{2,}/g, ' ').trim()
 

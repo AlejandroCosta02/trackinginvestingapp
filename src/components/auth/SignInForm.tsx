@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -17,10 +17,17 @@ export default function SignInForm() {
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
 
   useEffect(() => {
+    // Clear any existing auth-related cookies on component mount
+    document.cookie.split(";").forEach(function(c) {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+  }, []);
+
+  useEffect(() => {
     const checkAuth = async () => {
       if (status === 'authenticated' && session) {
         console.log('Session detected, redirecting to dashboard');
-        await router.push('/dashboard');
+        router.replace('/dashboard');
       }
     };
     checkAuth();
@@ -56,64 +63,87 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError("");
 
     try {
+      console.log("Attempting sign in with credentials...");
+      
+      // First, try to sign in
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
+      console.log("Sign in result:", result);
+
       if (result?.error) {
         console.error("Sign in error:", result.error);
         setError("Invalid email or password");
         toast.error("Invalid email or password");
-      } else if (result?.ok) {
+        return;
+      }
+
+      if (result?.ok) {
         toast.success("Welcome back!");
-        // Wait for session to be established
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-        router.push(callbackUrl);
-        router.refresh(); // Force a refresh to update the navigation state
+        
+        try {
+          // Try to get the session
+          const session = await getSession();
+          console.log("Session after login:", session);
+          
+          if (session) {
+            // If we have a session, use router
+            router.push('/dashboard');
+          } else {
+            // If no session but login was successful, use direct navigation
+            console.log("No session but login successful, using direct navigation");
+            window.location.href = '/dashboard';
+          }
+        } catch (sessionError) {
+          console.error("Session error:", sessionError);
+          // On any session error, use direct navigation
+          console.log("Session error, falling back to direct navigation");
+          window.location.href = '/dashboard';
+        }
       }
     } catch (error) {
       console.error("Sign-in error:", error);
-      setError("An error occurred. Please try again.");
-      toast.error("An error occurred. Please try again.");
+      // Check if it's a storage access error
+      if (error instanceof Error && error.message.includes("storage")) {
+        console.log("Storage access error detected, using alternative navigation");
+        // Try direct navigation as a fallback
+        window.location.href = '/dashboard';
+      } else {
+        setError("An error occurred. Please try again.");
+        toast.error("An error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
+    if (isLoading) return;
+    
     try {
       setIsLoading(true);
       setError("");
       
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-      console.log('Initiating Google sign-in with callback:', callbackUrl);
+      console.log('Initiating Google sign-in...');
       
-      const result = await signIn("google", {
+      // Use window.location.origin to ensure we're using the correct base URL
+      const callbackUrl = `${window.location.origin}/dashboard`;
+      await signIn("google", {
         callbackUrl,
-        redirect: false,
+        redirect: true
       });
-
-      if (result?.error) {
-        console.error("Google sign in error:", result.error);
-        toast.error("Could not sign in with Google");
-      } else if (result?.ok) {
-        toast.success("Welcome!");
-        // Wait for session to be established
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await router.push(callbackUrl);
-        router.refresh(); // Force a refresh to update the navigation state
-      }
     } catch (error) {
       console.error("Google sign-in error:", error);
       toast.error("Could not sign in with Google");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -173,66 +203,58 @@ export default function SignInForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-brand-navy bg-brand-gold hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand-gold hover:bg-brand-gold-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link
-                href="/auth/signup"
-                className="font-medium text-brand-gold hover:text-opacity-90"
-              >
-                Don&apos;t have an account? Sign up
-              </Link>
-            </div>
-          </div>
         </form>
 
         {isGoogleAvailable && (
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-card text-muted-foreground">
-                  Or continue with
-                </span>
+          <>
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-card text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-6">
+            <div>
               <button
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
+                className="w-full flex items-center justify-center px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-gold"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
+                <svg
+                  className="w-5 h-5 mr-2"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12.545,12.151L12.545,12.151c0,1.054,0.855,1.909,1.909,1.909h3.536c-0.607,1.972-2.405,3.404-4.545,3.404c-2.627,0-4.545-2.127-4.545-4.545s2.127-4.545,4.545-4.545c1.127,0,2.163,0.386,2.981,1.031l2.828-2.828C17.545,5.172,15.372,4,12.545,4C8.018,4,4,8.018,4,12.545s4.018,8.545,8.545,8.545c4.527,0,8.545-4.018,8.545-8.545c0-0.582-0.067-1.149-0.182-1.697h-8.363V12.151z" />
                 </svg>
                 Continue with Google
               </button>
             </div>
-          </div>
+          </>
         )}
+
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link
+              href="/auth/signup"
+              className="font-medium text-brand-gold hover:text-brand-gold-dark"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

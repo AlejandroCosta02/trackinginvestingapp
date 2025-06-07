@@ -44,7 +44,14 @@ providers.push(
 
       try {
         const user = await db.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            image: true
+          }
         });
 
         if (!user || !user.password) {
@@ -79,7 +86,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers,
   session: {
-    strategy: "jwt",
+    strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
@@ -88,91 +95,99 @@ export const authOptions: NextAuthOptions = {
     signOut: "/auth/signout",
     error: "/auth/error",
   },
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    }
+  },
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("Sign in callback:", { 
-        user: { id: user.id, email: user.email },
-        provider: account?.provider,
-        profile: profile?.email
-      });
+      try {
+        console.log("Sign in callback:", { 
+          user: { id: user.id, email: user.email },
+          provider: account?.provider,
+          profile: profile?.email
+        });
 
-      // For Google authentication
-      if (account?.provider === "google") {
-        try {
-          // Check if user exists
-          const existingUser = await db.user.findUnique({
-            where: { email: user.email! }
-          });
+        if (!user?.email) return false;
 
-          if (!existingUser) {
-            // Create new user if doesn't exist
-            await db.user.create({
-              data: {
-                email: user.email!,
-                name: user.name,
-                image: user.image,
-              }
-            });
+        const existingUser = await db.user.findUnique({
+          where: { email: user.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true
           }
-        } catch (error) {
-          console.error("Error in Google sign in:", error);
-          return false;
+        });
+
+        if (!existingUser && account?.provider === "google") {
+          const newUser = await db.user.create({
+            data: {
+              email: user.email,
+              name: user.name || user.email.split('@')[0],
+              image: user.image,
+            }
+          });
+          user.id = newUser.id;
+        } else if (existingUser) {
+          user.id = existingUser.id;
         }
-      }
 
-      return true;
+        return true;
+      } catch (error) {
+        console.error("Error in sign in callback:", error);
+        return false;
+      }
     },
-    async jwt({ token, user, account, profile }) {
-      console.log("JWT callback:", { 
-        tokenSub: token.sub,
-        userId: user?.id,
-        provider: account?.provider
-      });
-
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.picture = user.image;
+    async session({ session, user }) {
+      try {
+        if (session.user) {
+          session.user.id = user.id;
+          session.user.email = user.email;
+          session.user.name = user.name;
+          session.user.image = user.image;
+        }
+        return session;
+      } catch (error) {
+        console.error("Error in session callback:", error);
+        return session;
       }
-
-      return token;
-    },
-    async session({ session, token }) {
-      console.log("Session callback:", {
-        userId: token.id,
-        userEmail: token.email
-      });
-
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.image = token.picture as string;
-      }
-
-      return session;
-    },
-    async redirect({ url, baseUrl }) {
-      console.log("Redirect callback:", { url, baseUrl });
-      
-      // Always redirect to dashboard after sign in
-      if (url.startsWith("/auth/signin") || url.includes("/api/auth/callback")) {
-        return `${baseUrl}/dashboard`;
-      }
-
-      // Allow relative URLs
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
-      }
-
-      // Allow URLs from the same origin
-      if (new URL(url).origin === baseUrl) {
-        return url;
-      }
-
-      return baseUrl;
     }
   },
   debug: process.env.NODE_ENV === "development",
+  logger: {
+    error: (code, ...message) => {
+      console.error(code, ...message)
+    },
+    warn: (code, ...message) => {
+      console.warn(code, ...message)
+    },
+    debug: (code, ...message) => {
+      console.debug(code, ...message)
+    }
+  }
 }; 

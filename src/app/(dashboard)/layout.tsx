@@ -18,26 +18,38 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    const checkAuth = async () => {
+      console.log("Dashboard Layout - Session Status:", status);
+      console.log("Dashboard Layout - Session Data:", session);
 
-    if (status === 'unauthenticated') {
-      console.log('No session found, redirecting to signin');
-      router.replace('/auth/signin');
-      return;
-    }
+      if (status === 'loading') {
+        setIsLoading(true);
+        return;
+      }
 
-    setIsLoading(false);
-  }, [status, router]);
+      if (status === 'unauthenticated' || !session?.user?.id) {
+        console.log('No valid session found, redirecting to signin');
+        router.replace('/auth/signin');
+        return;
+      }
 
-  if (isLoading || status === 'loading') {
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, [status, session, router]);
+
+  // Show loading state while checking authentication
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
+        <div className="animate-pulse text-foreground">Loading...</div>
       </div>
     );
   }
 
-  if (!session) {
+  // Redirect to sign in if no session
+  if (status === 'unauthenticated' || !session?.user?.id) {
     return null;
   }
 

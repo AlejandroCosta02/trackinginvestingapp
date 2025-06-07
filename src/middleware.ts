@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   if (!isApiRoute) {
     const cspHeader = `
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://trackinginvestingapp.vercel.app;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app;
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https:;
       font-src 'self' data:;
